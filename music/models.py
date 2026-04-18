@@ -18,8 +18,7 @@ class Artist(models.Model):
     )
     
     # photo = models.ImageField(upload_to='artists/', null=True, blank=True)
-    # 
-    
+        
     def __str__(self):
         return self.name
     
@@ -27,15 +26,15 @@ class Artist(models.Model):
         ordering = ['name']
 
 class Album(models.Model):
-    title = models.CharField(  # Лучше назвать title для единообразия
+    title = models.CharField(
         max_length=200
     )
     artist = models.ForeignKey(
         Artist,
-        on_delete=models.CASCADE,  # Если удаляем артиста, удаляем и альбомы
+        on_delete=models.CASCADE,
         related_name='albums'
     )
-    cover = models.ImageField(  # Обложка альбома
+    cover = models.ImageField(
         upload_to='albums/',
         null=True,
         blank=True
@@ -52,7 +51,7 @@ class Album(models.Model):
         ordering = ['-release_date', 'title']
 
 class Track(models.Model):
-    title = models.CharField(  # Исправил опечатку Charfield -> CharField
+    title = models.CharField(
         max_length=150
     )
     artist = models.ForeignKey(
@@ -70,10 +69,10 @@ class Track(models.Model):
         Album,
         on_delete=models.SET_NULL,
         null=True,
-        blank=True,  # Трек может быть синглом без альбома
+        blank=True,
         related_name='tracks'
     )
-    cover = models.ImageField(  # Обложка трека (если сингл или своя обложка)
+    cover = models.ImageField(
         upload_to='tracks/covers/',
         null=True,
         blank=True
@@ -84,8 +83,11 @@ class Track(models.Model):
     uploaded_at = models.DateTimeField(
         auto_now_add=True
     )
-    # Можно добавить длительность позже
-    # duration = models.PositiveIntegerField(help_text='Длительность в секундах', null=True, blank=True)
+    
+    duration = models.PositiveIntegerField(
+        help_text='Длительность в секундах',
+        null=True, blank=True
+    )
     
     def __str__(self):
         return f"{self.artist.name} - {self.title}"
