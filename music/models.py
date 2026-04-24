@@ -60,11 +60,10 @@ class Track(models.Model):
         on_delete=models.CASCADE,
         related_name='tracks'
     )
-    genre = models.ForeignKey(
+    genre = models.ManyToManyField(
         Genre,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name='tracks'
+        related_name='tracks',
+        blank=True
     )
     album = models.ForeignKey(
         Album,

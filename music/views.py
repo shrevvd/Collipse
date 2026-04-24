@@ -4,13 +4,13 @@ from .models import Track, Artist, Album, Genre
 
 
 def track_list(request):
-    tracks = Track.objects.select_related('artist', 'album', 'genre').all()
+    tracks = Track.objects.select_related('artist', 'album').prefetch_related('genre').all()
     return render(request, 'music/track_list.html', {'tracks': tracks})
 
 
 def track_detail(request, pk):
     track = get_object_or_404(
-        Track.objects.select_related('artist', 'album', 'genre'),
+        Track.objects.select_related('artist', 'album').prefetch_related('genre'),
         pk=pk
     )
     return render(request, 'music/track_detail.html', {'track': track})

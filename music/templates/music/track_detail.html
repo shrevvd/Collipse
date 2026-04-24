@@ -7,7 +7,13 @@
     <h1>{{ track.title }}</h1>
     <p><strong>Исполнитель:</strong> {{ track.artist.name }}</p>
     <p><strong>Альбом:</strong> {{ track.album.title|default:"Сингл" }}</p>
-    <p><strong>Жанр:</strong> {{ track.genre.name|default:"Не указан" }}</p>
+    <p><strong>Жанры:</strong> 
+    {% if track.genre.all %}
+        {{ track.genre.all|join:", " }}
+    {% else %}
+        Не указаны
+    {% endif %}
+</p>
     
     {% if track.audio_file %}
         <audio controls>

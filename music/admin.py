@@ -19,6 +19,10 @@ class AlbumAdmin(admin.ModelAdmin):
 
 @admin.register(Track)
 class TrackAdmin(admin.ModelAdmin):
-    list_display = ['title', 'artist', 'album', 'genre', 'uploaded_at']
-    list_filter = ['artist', 'genre', 'album']
+    list_display = ['title', 'artist', 'album', 'display_genre', 'uploaded_at']
+    list_filter = ['artist', 'album']
     search_fields = ['title', 'artist__name']
+    
+    def display_genre(self, obj):
+        return ", ".join([g.name for g in obj.genre.all()])
+    display_genre.short_description = 'Жанры'

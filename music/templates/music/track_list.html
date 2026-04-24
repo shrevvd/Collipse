@@ -12,7 +12,7 @@
         <li>
             <strong>{{ track.title }}</strong>
             — {{ track.artist.name }}
-            {% if track.genre %}[{{ track.genre.name }}]{% endif %}
+            {% if track.genre.all %}[{{ track.genre.all|join:", " }}]{% endif %}
             <a href="{% url 'track_detail' track.pk %}">▶ Слушать</a>
         </li>
     {% empty %}
