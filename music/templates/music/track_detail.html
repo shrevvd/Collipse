@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ track.title }} — Collipse</title>
+</head>
+<body>
+    <h1>{{ track.title }}</h1>
+    <p><strong>Исполнитель:</strong> {{ track.artist.name }}</p>
+    <p><strong>Альбом:</strong> {{ track.album.title|default:"Сингл" }}</p>
+    <p><strong>Жанр:</strong> {{ track.genre.name|default:"Не указан" }}</p>
+    
+    {% if track.audio_file %}
+        <audio controls>
+            <source src="{{ track.audio_file.url }}" type="audio/mpeg">
+            Твой браузер не поддерживает аудио.
+        </audio>
+    {% else %}
+        <p>🎵 Аудиофайл не загружен</p>
+    {% endif %}
+    
+    <br>
+    <a href="{% url 'track_list' %}">← Назад к списку</a>
+</body>
+</html>

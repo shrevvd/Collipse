@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Collipse — Музыка</title>
+</head>
+<body>
+    <h1>🎵 Треки</h1>
+    <a href="{% url 'random_track' %}">🎲 Случайный трек</a>
+    <hr>
+    <ul>
+    {% for track in tracks %}
+        <li>
+            <strong>{{ track.title }}</strong>
+            — {{ track.artist.name }}
+            {% if track.genre %}[{{ track.genre.name }}]{% endif %}
+            <a href="{% url 'track_detail' track.pk %}">▶ Слушать</a>
+        </li>
+    {% empty %}
+        <p>Треков пока нет. Добавь через <a href="/admin/">админку</a>.</p>
+    {% endfor %}
+    </ul>
+</body>
+</html>

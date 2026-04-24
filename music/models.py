@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from django.db import models
 
 class Genre(models.Model):
@@ -94,3 +95,50 @@ class Track(models.Model):
     
     class Meta:
         ordering = ['-uploaded_at']
+
+
+
+
+class UserGenreScore(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
+    score = models.IntegerField(default=0)
+
+    class Meta:
+        unique_together = ['user', 'genre']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.genre.name}: {self.score}"
+
+
+class AbstractLike(models.Model):
+    
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE
+    )
+    
+    track = models.ForeignKey(
+        Track,
+        on_delete=models.CASCADE
+    )
+    
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    class Meta:
+        abstract = True  #таблица в бд не создаётся
+
+    def __str__(self):
+        return f"{self.user.username} - {self.track.title}"
+
+
+class Like(AbstractLike):
+    #лайк трека
+    pass
+
+
+class Dislike(AbstractLike):
+    #дизлайк трека
+    pass
