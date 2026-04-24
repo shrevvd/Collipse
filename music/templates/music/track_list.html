@@ -1,23 +1,64 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Collipse — Музыка</title>
-</head>
-<body>
-    <h1>🎵 Треки</h1>
-    <a href="{% url 'random_track' %}">🎲 Случайный трек</a>
-    <hr>
-    <ul>
-    {% for track in tracks %}
-        <li>
-            <strong>{{ track.title }}</strong>
-            — {{ track.artist.name }}
-            {% if track.genre.all %}[{{ track.genre.all|join:", " }}]{% endif %}
-            <a href="{% url 'track_detail' track.pk %}">▶ Слушать</a>
-        </li>
-    {% empty %}
-        <p>Треков пока нет. Добавь через <a href="/admin/">админку</a>.</p>
-    {% endfor %}
-    </ul>
-</body>
-</html>
+{% extends 'base.html' %}
+{% load static %}
+{% load duration_filters %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card-custom-left p-4 mb-3">
+            <div class="input-group">
+                <span class="input-group-text" style="background:transparent; border:1px solid #D9D9D9; border-radius:20px 0 0 20px;">
+                    <img src="{% static 'icons/ЛУПА.svg' %}" width="18" height="18" style="filter: brightness(0) invert(0.7);">
+                </span>
+                <input type="text" class="form-control search-bar" placeholder="Find a track...">
+            </div>
+        </div>
+        <div class="card-custom-rec p-4 text-center">
+            <h5 class="text-white fw-bold">Music RECS</h5>
+            <img src="{% static 'icons/ПРОИГРЫВАТЕЛЬ.svg' %}" alt="Play" class="play-icon mt-3" onclick="console.log('Play random')">
+            <p class="upload-link mt-3">Upload your track</p>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card-custom-right p-4">
+            <div class="d-flex gap-2 mb-3">
+                <button class="tab-btn active">Likes</button>
+                <button class="tab-btn">Playlists</button>
+                <button class="tab-btn">Albums</button>
+            </div>
+            <hr style="border-color: #D9D9D9; opacity: 1;">
+            
+            {% for track in tracks %}
+            <div class="d-flex align-items-center track-row" style="cursor: pointer;" onclick="console.log('Play: {{ track.title }}')">
+                {% if track.cover %}
+                    <img src="{{ track.cover.url }}" width="40" height="40" style="border-radius: 4px; object-fit: cover; margin-right: 10px;">
+                {% else %}
+                    <div style="width: 40px; height: 40px; border-radius: 4px; background: #2a2a2a; margin-right: 10px; display: flex; align-items: center; justify-content: center;">
+                        <span style="color: #aaa; font-size: 14px;">♪</span>
+                    </div>
+                {% endif %}
+                <div style="flex: 1;">
+                    <div style="color: white; font-size: 14px;">{{ track.title }}</div>
+                    <div style="color: #aaa; font-size: 12px; font-weight: 300;">{{ track.artist.name }}</div>
+                </div>
+                <span style="color: #aaa; font-size: 12px;">
+                    {% if track.duration %}{{ track.duration|format_duration }}{% else %}--:--{% endif %}
+                </span>
+            </div>
+            {% if not forloop.last %}
+            <hr style="border-color: #D9D9D9; opacity: 0.11; margin: 0;">
+            {% endif %}
+            {% empty %}
+            <p class="text-muted">No tracks yet</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .track-row { padding: 4px 12px; margin: 0 -12px; }
+    .track-row:hover { background: rgba(255, 255, 255, 0.03); border-radius: 14px; }
+</style>
+
+{% endblock %}
