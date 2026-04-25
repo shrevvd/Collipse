@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="d-flex justify-content-center mt-5">
+    <div style="width: 400px;">
+        <div class="card-custom-left p-4">
+            <h3 class="text-center mb-4" style="color: #D9D9D9; font-weight: 700;">Sign up</h3>
+            
+            {% if form.errors %}
+            <div style="color: #ff6b6b; margin-bottom: 15px; font-size: 14px;">
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <form method="POST">
+                {% csrf_token %}
+                <input type="text" name="username" class="search-box mb-3" placeholder="Login" style="width: 100%; padding: 10px 15px; border-radius: 9px;" required>
+                <input type="email" name="email" class="search-box mb-3" placeholder="Email" style="width: 100%; padding: 10px 15px; border-radius: 9px;" required>
+                <input type="password" name="password1" class="search-box mb-3" placeholder="Password" style="width: 100%; padding: 10px 15px; border-radius: 9px;" required>
+                <input type="password" name="password2" class="search-box mb-3" placeholder="Password (again)" style="width: 100%; padding: 10px 15px; border-radius: 9px;" required>
+                <button type="submit" style="width: 100%; background: #251C2D; color: #D9D9D9; border: 1px solid #D9D9D9; border-radius: 9px; padding: 10px; font-size: 16px; cursor: pointer;">Enter</button>
+            </form>
+            
+            <p class="text-center mt-3">
+                <a href="{% url 'login' %}" class="upload-link">Log In</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
