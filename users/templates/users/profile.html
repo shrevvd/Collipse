@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<script>
+    document.getElementById('mainNavbar').classList.add('profile-mode');
+    document.getElementById('avatarFront').classList.add('profile-expanded');
+    document.getElementById('avatarBack').classList.add('profile-expanded');
+    document.getElementById('avatarLink').setAttribute('href', '/users/profile/{{ profile.user.username }}/');
+</script>
+
+<div class="row">
+    <!-- ЛЕВАЯ КОЛОНКА: основная информация -->
+    <div class="col-md-9">
+        <!-- Верхняя строка -->
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <a href="{% url 'track_list' %}" style="flex-shrink: 0;">
+                <img src="{% static 'icons/НАЗАД.svg' %}" width="24" height="24" style="filter: brightness(0) invert(0.7);">
+            </a>
+            <div>
+                <h3 style="color: #D9D9D9; margin: 0; font-size: 22px; font-weight: 700;">{{ profile.user.username }}</h3>
+                <p style="color: #79787A; margin: 0; font-size: 13px;">@{{ profile.user.username }}</p>
+            </div>
+            <!-- Окошко с описанием (нельзя нажать и поменять) -->
+            <div class="search-box" style="flex: 1; pointer-events: none;">
+                <span style="color: #79787A; font-size: 14px;">{{ profile.bio|default:"No bio yet" }}</span>
+            </div>
+            {% if request.user == profile.user %}
+            <a href="#" style="flex-shrink: 0;">
+                <img src="{% static 'icons/КАРАНДАШ.svg' %}" width="22" height="22" style="filter: brightness(0) invert(0.7);">
+            </a>
+            {% endif %}
+        </div>
+        
+        <!-- Большая плашка -->
+        <div class="card-custom-right p-4" style="background: #2A282C;">
+            <h5 style="color: #D9D9D9; font-weight: 600;">Favourite artists:</h5>
+            <ul style="color: #aaa; padding-left: 20px;">
+                {% for artist in top_artists %}
+                    <li>{{ artist.name }}</li>
+                {% empty %}
+                    <li>No favourites yet</li>
+                {% endfor %}
+            </ul>
+            
+            <h5 style="color: #D9D9D9; font-weight: 600; margin-top: 20px;">Favourite songs:</h5>
+            <ul style="color: #aaa; padding-left: 20px;">
+                {% for track in top_tracks %}
+                    <li>{{ track.title }} — {{ track.artist.name }}</li>
+                {% empty %}
+                    <li>No favourites yet</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    
+    <!-- ПРАВАЯ КОЛОНКА: Friends + статистика -->
+    <div class="col-md-3">
+        <div class="sticky-profile">
+            <div class="card-custom-left p-3" style="background: #2A282C;">
+                <h5 style="color: #D9D9D9; font-weight: 600; font-size: 16px;">Friends</h5>
+                {% if friends %}
+                <div class="d-flex gap-2 flex-wrap mt-2">
+                    {% for friend in friends %}
+                    <div style="text-align: center;">
+                        <div style="width: 40px; height: 40px; border-radius: 50%; background: #353237; overflow: hidden; margin: 0 auto;">
+                            {% if friend.profile.avatar %}
+                                <img src="{{ friend.profile.avatar.url }}" width="40" height="40" style="object-fit: cover;">
+                            {% else %}
+                                <img src="{% static 'icons/АВАТАР.svg' %}" width="40" height="40" style="object-fit: cover;">
+                            {% endif %}
+                        </div>
+                        <span style="color: #aaa; font-size: 10px;">{{ friend.username }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p style="color: #79787A; font-size: 13px; margin-top: 10px;">No friends</p>
+                {% endif %}
+                <p class="upload-link mt-2" style="font-size: 12px;">View all friends</p>
+            </div>
+            <div class="mt-3" style="color: #79787A; font-size: 13px;">
+                <p style="margin-bottom: 6px;">On the site: <span style="color: #D9D9D9;">{{ profile.user.date_joined|date:"d.m.Y" }}</span></p>
+                <p style="margin-bottom: 6px;">Likes: <span style="color: #D9D9D9;">{{ likes_count }}</span></p>
+                <p style="margin-bottom: 6px;">Playlists created: <span style="color: #D9D9D9;">{{ playlists_count }}</span></p>
+                <p>Songs uploaded: <span style="color: #D9D9D9;">{{ uploads_count }}</span></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .sticky-profile {
+        position: fixed;
+        top: 255px;
+        right: 20px;
+        width: 22%;
+    }
+    @media (max-width: 767px) {
+        .sticky-profile {
+            position: static;
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}

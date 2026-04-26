@@ -1,13 +1,16 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.models import User
 from .forms import RegisterForm
+from .models import Profile
 
 def register(request):
     if request.method == 'POST':
         form = RegisterForm(request.POST)
         if form.is_valid():
             user = form.save()
+            Profile.objects.get_or_create(user=user)
             login(request, user)
             return redirect('track_list')
     else:
@@ -28,3 +31,16 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect('track_list')
+
+def profile(request, username):
+    user = get_object_or_404(User, username=username)
+    profile = get_object_or_404(Profile, user=user)
+    context = {
+        'profile': profile,
+        'likes_count': 0,
+        'playlists_count': 0,
+        'uploads_count': 0,
+        'top_artists': [],
+        'top_tracks': [],
+    }
+    return render(request, 'users/profile.html', context)

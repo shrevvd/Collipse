@@ -5,19 +5,21 @@
 {% block content %}
 <div class="row g-3">
     <div class="col-md-4">
-        <!-- Поиск (одна карточка, не две) -->
-        <div class="card-custom-left p-3 mb-3">
-            <div class="search-box">
-                <input type="text" placeholder="Find a track...">
-                <img src="{% static 'icons/ЛУПА.svg' %}" alt="Search" style="cursor: pointer;" onclick="console.log('Search:', document.getElementById('searchInput').value)">
+         <div class="sticky-left">
+            <!-- Поиск (одна карточка, не две) -->
+            <div class="card-custom-left p-3 mb-3">
+                <div class="search-box">
+                    <input type="text" placeholder="Find a track...">
+                    <img src="{% static 'icons/ЛУПА.svg' %}" alt="Search" style="cursor: pointer;" onclick="console.log('Search:', document.getElementById('searchInput').value)">
+                </div>
             </div>
-        </div>
-        
-        <!-- Music RECS -->
-        <div class="card-custom-rec p-4 text-center">
-            <h5 class="text-white fw-bold">Music RECS</h5>
-            <img src="{% static 'icons/ПРОИГРЫВАТЕЛЬ.svg' %}" alt="Play" class="play-icon mt-3" onclick="console.log('Play random')">
-            <p class="upload-link mt-3">Upload your track</p>
+            
+            <!-- Music RECS -->
+            <div class="card-custom-rec p-4 text-center">
+                <h5 class="text-white fw-bold">Music RECS</h5>
+                <img src="{% static 'icons/ПРОИГРЫВАТЕЛЬ.svg' %}" alt="Play" class="play-icon mt-3" onclick="console.log('Play random')">
+                <p class="upload-link mt-3">Upload your track</p>
+            </div>
         </div>
     </div>
     
@@ -61,4 +63,11 @@
     .track-row { padding: 4px 12px; margin: 0 -12px; }
     .track-row:hover { background: rgba(255, 255, 255, 0.03); border-radius: 14px; }
 </style>
+
+<script>
+    document.getElementById('mainNavbar').classList.remove('profile-mode');
+    document.getElementById('avatarFront').classList.remove('profile-expanded');
+    document.getElementById('avatarBack').classList.remove('profile-expanded');
+</script>
+
 {% endblock %}
