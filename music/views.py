@@ -36,3 +36,8 @@ def artist_detail(request, pk):
         'artist': artist,
         'tracks': tracks
     })
+    
+def album_detail(request, pk):
+    album = get_object_or_404(Album, pk=pk)
+    tracks = album.tracks.all()
+    return render(request, 'music/album_detail.html', {'album': album, 'tracks': tracks})

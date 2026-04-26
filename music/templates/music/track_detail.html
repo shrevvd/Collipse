@@ -1,30 +1,45 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>{{ track.title }} — Collipse</title>
-</head>
-<body>
-    <h1>{{ track.title }}</h1>
-    <p><strong>Исполнитель:</strong> {{ track.artist.name }}</p>
-    <p><strong>Альбом:</strong> {{ track.album.title|default:"Сингл" }}</p>
-    <p><strong>Жанры:</strong> 
-    {% if track.genre.all %}
-        {{ track.genre.all|join:", " }}
-    {% else %}
-        Не указаны
-    {% endif %}
-</p>
-    
-    {% if track.audio_file %}
-        <audio controls>
-            <source src="{{ track.audio_file.url }}" type="audio/mpeg">
-            Твой браузер не поддерживает аудио.
-        </audio>
-    {% else %}
-        <p>🎵 Аудиофайл не загружен</p>
-    {% endif %}
-    
-    <br>
-    <a href="{% url 'track_list' %}">← Назад к списку</a>
-</body>
-</html>
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6 offset-md-3">
+        <div class="card-custom-right p-4 text-center">
+            
+            <!-- Обложка трека -->
+            {% if track.cover %}
+                <img src="{{ track.cover.url }}" style="width: 200px; height: 200px; border-radius: 8px; object-fit: cover; margin-bottom: 20px;">
+            {% else %}
+                <div style="width: 200px; height: 200px; border-radius: 8px; background: #2a2a2a; margin: 0 auto 20px;"></div>
+            {% endif %}
+            
+            <!-- Название -->
+            <h2 style="color: white; margin-bottom: 10px;">{{ track.title }}</h2>
+            
+            <!-- Автор (кликабельный, с аватаркой) -->
+            <a href="{% url 'artist_detail' track.artist.pk %}" style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;">
+                {% if track.artist.photo %}
+                    <img src="{{ track.artist.photo.url }}" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">
+                {% else %}
+                    <div style="width: 30px; height: 30px; border-radius: 50%; background: #353237;"></div>
+                {% endif %}
+                <span class="upload-link" style="font-size: 16px;">{{ track.artist.name }}</span>
+            </a>
+            
+            <!-- Альбом (кликабельный) -->
+            {% if track.album %}
+                <a href="{% url 'album_detail' track.album.pk %}" class="upload-link" style="font-size: 14px;">{{ track.album.title }}</a>
+            {% endif %}
+            
+            <!-- Аудиоплеер -->
+            {% if track.audio_file %}
+                <audio controls style="width: 100%; margin-top: 20px;">
+                    <source src="{{ track.audio_file.url }}" type="audio/mpeg">
+                </audio>
+            {% endif %}
+            
+            <a href="{% url 'track_list' %}" class="upload-link mt-3" style="display: block;">← Back</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

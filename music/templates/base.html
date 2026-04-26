@@ -230,6 +230,28 @@
         .track-row { padding: 4px 12px; margin: 0 -12px; }
         .track-row:hover { background: rgba(255, 255, 255, 0.03); border-radius: 14px; }
 
+        .track-row:hover .track-duration {
+            margin-right: 40px !important;
+        }
+        .track-row:hover .track-info-icon {
+            display: block !important;
+        }
+        .track-info-icon:hover img {
+            filter: brightness(0) invert(1) !important;
+        }
+
+        .track-duration {
+            transition: margin-right 0.2s;
+            margin-right: 10px;
+        }
+
+        .track-info-icon {
+            display: none !important;
+            position: absolute;
+            right: 10px;
+            z-index: 5;
+        }
+
         .sticky-left { position: fixed; top: 120px; width: 30%; }
         @media (max-width: 767px) {
             .sticky-left { position: static; width: 100%; }
@@ -311,6 +333,6 @@
         document.addEventListener('mouseup', function() { isDragging = false; });
     </script>
 
-    {% block scripts %}{% endblock %}
+    <audio id="audioPlayer" style="display: none;"></audio>
 </body>
 </html>
