@@ -17,9 +17,10 @@ def track_detail(request, pk):
 
 
 def random_track(request):
-    """Рандомный трек — редирект на страницу трека"""
-    track = Track.objects.order_by('?').first()
-    return redirect('track_detail', pk=track.pk) if track else redirect('track_list')
+    track = Track.objects.exclude(audio_file='').order_by('?').first()
+    if track:
+        return redirect('track_detail', pk=track.pk)
+    return redirect('track_list')
 
 
 def artist_list(request):

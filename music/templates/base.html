@@ -45,9 +45,14 @@
             overflow: hidden;
             text-overflow: ellipsis;
             transition: width 0.5s, opacity 0.3s;
+            opacity: 0.6;
         }
         .now-playing.placeholder-text {
             color: rgba(255, 255, 255, 0.4);
+        }
+
+        .now-playing.placeholder-text-active {
+            color: rgba(255, 255, 255, 0.979)
         }
 
         .nav-icons {
@@ -137,7 +142,6 @@
         }
         .navbar.profile-mode .now-playing {
             width: 150px;
-            opacity: 0.5;
         }
         .navbar.profile-mode .nav-icons {
             margin-right: 240px;
@@ -191,6 +195,7 @@
             bottom: 50px;
             left: calc(16.66% - 200px);
             z-index: 100;
+            transform: translate(-70px, -40px);
         }
         .disc-container { position: relative; width: 200px; height: 130px; }
         .disc-cover-spin {
@@ -220,12 +225,53 @@
         }
         .disc-back:active { cursor: grabbing; }
         .disc-front { z-index: 3; width: 160px; bottom: 75px; pointer-events: auto; }
-        .disc-btn { position: absolute; z-index: 15; cursor: pointer; pointer-events: auto; }
-        .disc-btn-next { top: -195px; left: 100%; transform: translateX(-50%); width: 100px; }
-        .disc-btn-prev { bottom: -15px; left: 100%; transform: translateX(-50%); width: 100px; }
-        .disc-btn-pause { top: -23px; left: 50%; transform: translate(-50%, -50%); width: 60px; z-index: 20; }
-        .disc-heart-empty { bottom: 132px; right: -100px; width: 45px; }
-        .disc-heart-broken { bottom: 132px; right: -45px; width: 45px; }
+        .disc-rect {
+            position: absolute;
+            left: 80px;
+            top: -30px;
+            transform: translateY(-50%);
+            z-index: -5;
+            width: 345px;
+        }
+
+        /* кнопки*/
+        .disc-btn {
+            position: absolute;
+            z-index: 15;
+            cursor: pointer;
+            pointer-events: auto;
+            left: -50px;
+        }
+
+        .disc-btn-next {
+            top: -260px;
+            left: 333px;
+            width: 53px;
+        }
+
+        .disc-btn-prev {
+            top: 145px;
+            left: 333px;
+            width: 53px;
+        }
+
+        .disc-btn-like {
+            top: -165px;
+            left: 350px;
+            width: 55px;
+        }
+
+        .disc-btn-info {
+            top: -50px;
+            left: 370px;
+            width: 40px;
+        }
+
+        .disc-btn-dislike {
+            top: 60px;
+            left: 350px;
+            width: 55px;
+        }
 
         .track-row { padding: 4px 12px; margin: 0 -12px; }
         .track-row:hover { background: rgba(255, 255, 255, 0.03); border-radius: 14px; }
@@ -261,7 +307,7 @@
 <body>
     <nav class="navbar" id="mainNavbar">
         <a class="navbar-brand" href="/">Collipse</a>
-        <div class="now-playing placeholder-text" id="nowPlaying">Choose a song!</div>
+        <div class="now-playing placeholder-text" id="nowPlaying">Choose a track!</div>
         <div class="nav-icons" id="navIcons">
             <div class="glow-indicator"></div>
             <span class="nav-icon active" data-tab="music"><img src="{% static 'icons/МУЗЫКА.svg' %}" alt="Музыка"></span>
@@ -285,16 +331,28 @@
 
     <div class="disc-wrapper">
         <div class="disc-container">
-            <img src="{% static 'player/ЗАДНЯЯ_ЧАСТЬ_ДИСКА.svg' %}" class="disc-layer disc-back" alt="">
+            <!-- Задняя часть диска (таскается) -->
+            <img src="{% static 'player/ЗАДНЯЯ_ЧАСТЬ_ДИСКА.svg' %}" class="disc-layer disc-back" style="border-radius: 50%;" alt="">
+            
+            <!-- Обложка (крутится) -->
             <div class="disc-cover-spin playing">
                 <img src="{% static 'player/диск.png' %}" alt="cover">
             </div>
-            <img src="{% static 'player/СЛЕДУЮЩАЯ_ПЕСНЯ.svg' %}" class="disc-btn disc-btn-next" alt="Next">
-            <img src="{% static 'player/ПРЕДЫДУЩАЯ_ПЕСНЯ.svg' %}" class="disc-btn disc-btn-prev" alt="Prev">
-            <img src="{% static 'player/ПУСТОЕ_СЕРДЦЕ.svg' %}" class="disc-btn disc-heart-empty" alt="Like">
-            <img src="{% static 'player/РАЗБИТОЕ_СЕРДЦЕ.svg' %}" class="disc-btn disc-heart-broken" alt="Dislike">
+            
+            <!-- Передняя часть диска -->
             <img src="{% static 'player/ПЕРЕДНЯЯ_ЧАСТЬ_ДИСКА.svg' %}" class="disc-layer disc-front" alt="">
-            <img src="{% static 'player/ПАУЗА.svg' %}" class="disc-btn disc-btn-pause" alt="Pause">
+            
+            <!-- Прямоугольник слева -->
+            <img src="{% static 'player/задняя_часть_диска_2.svg' %}" class="disc-rect" alt="">
+            
+            <!-- Кнопки на прямоугольнике -->
+            <img src="{% static 'player/NEXT_SONG_WHITE_VER.svg' %}" class="disc-btn disc-btn-next" alt="Next">
+            <img src="{% static 'player/PREV_SONG_WHITE_VER.svg' %}" class="disc-btn disc-btn-prev" alt="Prev">
+            <img src="{% static 'player/ПУСТОЕ_СЕРДЦЕ.svg' %}" class="disc-btn disc-btn-like" alt="Like">
+            <a href="#" id="discInfoLink">
+                <img src="{% static 'player/ИНФО_ДЛЯ_ТРЕКА.svg' %}" class="disc-btn disc-btn-info" alt="Info">
+            </a>
+            <img src="{% static 'player/РАЗБИТОЕ_СЕРДЦЕ.svg' %}" class="disc-btn disc-btn-dislike" alt="Dislike">
         </div>
     </div>
 
@@ -334,5 +392,6 @@
     </script>
 
     <audio id="audioPlayer" style="display: none;"></audio>
+    
 </body>
 </html>
