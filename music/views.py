@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Count
 from django.http import JsonResponse
-from .models import Track, Artist, Album, Genre, Like, Dislike, UserGenreScore
+from .models import Track, Artist, Album, Genre, Like, Dislike, UserGenreScore, User
 
 
 def track_list(request):
@@ -73,13 +73,14 @@ def track_dislike(request, track_id):
     
     if existing_dislike.exists():
         existing_dislike.delete()
-        return JsonResponse({'status': 'unliked'})
+        for genre in track.genre.all():
+            user_score, created = UserGenreScore.objects.get_or_create(user=request.user, genre=genre)
+            user_score.score += 1
+            user_score.save()
+        return JsonResponse({'status': 'undisliked'})
     else:
-        # Удаляем лайк, если был
         Like.objects.filter(user=request.user, track=track).delete()
-        # Создаём дизлайк
         Dislike.objects.create(user=request.user, track=track)
-        # Обновляем рейтинг жанров (-1 к каждому жанру)
         for genre in track.genre.all():
             user_score, created = UserGenreScore.objects.get_or_create(user=request.user, genre=genre)
             user_score.score -= 1
@@ -101,3 +102,12 @@ def random_track_api(request):
             'duration': track.duration,
         })
     return JsonResponse({'status': 'empty', 'message': 'No tracks available'})
+
+def random_chat(request):
+    users = User.objects.exclude(id=request.user.id).order_by('?')
+    if users.exists():
+        return redirect('profile', username=users.first().username)
+    return redirect('track_list')
+
+def chat_list(request):
+    return render(request, 'music/chat_list.html')

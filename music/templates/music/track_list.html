@@ -82,6 +82,17 @@
     document.getElementById('mainNavbar').classList.remove('profile-mode');
     document.getElementById('avatarFront').classList.remove('profile-expanded');
     document.getElementById('avatarBack').classList.remove('profile-expanded');
+    
+    // Переключить подсветку на иконку музыки
+    const icons = document.querySelectorAll('.nav-icon');
+    icons.forEach(i => i.classList.remove('active'));
+    const musicIcon = document.querySelector('.nav-icon[data-tab="music"]');
+    if (musicIcon) musicIcon.classList.add('active');
+    
+    const indicator = document.querySelector('.glow-indicator');
+    if (indicator && musicIcon) {
+        indicator.style.left = (musicIcon.offsetLeft + musicIcon.offsetWidth/2 - 27) + 'px';
+    }
 </script>
 
 {% endblock %}

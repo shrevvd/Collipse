@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required
 from .forms import RegisterForm
 from .models import Profile
 
@@ -44,3 +45,16 @@ def profile(request, username):
         'top_tracks': [],
     }
     return render(request, 'users/profile.html', context)
+
+
+@login_required
+def edit_profile(request):
+    profile = get_object_or_404(Profile, user=request.user)
+    if request.method == 'POST':
+        profile.nickname = request.POST.get('nickname', '')
+        profile.bio = request.POST.get('bio', '')
+        if request.FILES.get('avatar'):
+            profile.avatar = request.FILES['avatar']
+        profile.save()
+        return redirect('profile', username=request.user.username)
+    return render(request, 'users/edit_profile.html', {'profile': profile})

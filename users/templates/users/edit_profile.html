@@ -6,30 +6,52 @@
     document.getElementById('mainNavbar').classList.add('profile-mode');
     document.getElementById('avatarFront').classList.add('profile-expanded');
     document.getElementById('avatarBack').classList.add('profile-expanded');
-    document.getElementById('avatarLink').setAttribute('href', '/users/profile/{{ profile.user.username }}/');
+    
+    // Меняем поведение аватарки — открываем проводник вместо перехода в профиль
+    document.addEventListener('DOMContentLoaded', function() {
+        const avatarLink = document.getElementById('avatarLink');
+        const avatarInput = document.getElementById('avatarInput');
+        const avatarForm = document.getElementById('avatarForm');
+        
+        if (avatarLink && avatarInput) {
+            avatarLink.href = 'Is.';
+            avatarLink.onclick = function(e) {
+                e.preventDefault();
+                avatarInput.click();
+            };
+        }
+        
+        if (avatarInput) {
+            avatarInput.onchange = function() {
+                if (avatarForm) avatarForm.submit();
+            };
+        }
+    });
 </script>
 
+<!-- Скрытая форма для загрузки аватарки -->
+<form id="avatarForm" method="POST" enctype="multipart/form-data" style="display: none;">
+    {% csrf_token %}
+    <input type="file" id="avatarInput" name="avatar" accept="image/*">
+</form>
+
 <div class="row">
-    <!-- ЛЕВАЯ КОЛОНКА: основная информация -->
+    <!-- ЛЕВАЯ КОЛОНКА -->
     <div class="col-md-9">
-        <!-- Верхняя строка -->
         <div class="d-flex align-items-center gap-3 mb-4">
-            <a href="{% url 'track_list' %}" style="flex-shrink: 0;">
+            <a href="{% url 'profile' profile.user.username %}" style="flex-shrink: 0;">
                 <img src="{% static 'icons/НАЗАД.svg' %}" width="24" height="24" style="filter: brightness(0) invert(0.7);">
             </a>
             <div>
                 <h3 style="color: #D9D9D9; margin: 0; font-size: 22px; font-weight: 700;">{{ profile.user.username }}</h3>
                 <p style="color: #79787A; margin: 0; font-size: 13px;">@{{ profile.user.username }}</p>
             </div>
-            <!-- Окошко с описанием (нельзя нажать и поменять) -->
-            <div class="search-box" style="flex: 1; pointer-events: none;">
-                <span style="color: #79787A; font-size: 14px;">{{ profile.bio|default:"No bio yet" }}</span>
-            </div>
-            {% if request.user == profile.user %}
-            <a href="{% url 'edit_profile' %}">
-                <img src="{% static 'icons/КАРАНДАШ.svg' %}" width="22" height="22" style="filter: brightness(0) invert(0.7);">
-            </a>
-            {% endif %}
+            <!-- Редактируемое поле био -->
+            <form method="POST" style="flex: 1; display: flex; gap: 10px;">
+                {% csrf_token %}
+                <input type="text" name="bio" value="{{ profile.bio }}" class="search-box" placeholder="Write your bio..." style="flex: 1; padding: 10px 15px; border-radius: 9px; color: white;">
+                <button type="submit" style="background: #251C2D; color: #D9D9D9; border: 1px solid #D9D9D9; border-radius: 9px; padding: 10px 20px; cursor: pointer;">Save</button>
+            </form>
         </div>
         
         <!-- Большая плашка -->
@@ -54,29 +76,12 @@
         </div>
     </div>
     
-    <!-- ПРАВАЯ КОЛОНКА: Friends + статистика -->
+    <!-- ПРАВАЯ КОЛОНКА -->
     <div class="col-md-3">
         <div class="sticky-profile">
             <div class="card-custom-left p-3" style="background: #2A282C;">
                 <h5 style="color: #D9D9D9; font-weight: 600; font-size: 16px;">Friends</h5>
-                {% if friends %}
-                <div class="d-flex gap-2 flex-wrap mt-2">
-                    {% for friend in friends %}
-                    <div style="text-align: center;">
-                        <div style="width: 40px; height: 40px; border-radius: 50%; background: #353237; overflow: hidden; margin: 0 auto;">
-                            {% if friend.profile.avatar %}
-                                <img src="{{ friend.profile.avatar.url }}" width="40" height="40" style="object-fit: cover;">
-                            {% else %}
-                                <img src="{% static 'icons/АВАТАР.svg' %}" width="40" height="40" style="object-fit: cover;">
-                            {% endif %}
-                        </div>
-                        <span style="color: #aaa; font-size: 10px;">{{ friend.username }}</span>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
                 <p style="color: #79787A; font-size: 13px; margin-top: 10px;">No friends</p>
-                {% endif %}
                 <p class="upload-link mt-2" style="font-size: 12px;">View all friends</p>
             </div>
             <div class="mt-3" style="color: #79787A; font-size: 13px;">
@@ -103,14 +108,4 @@
         }
     }
 </style>
-
-<script>
-    // Поменять аватарку в навбаре на аватарку просматриваемого пользователя
-    const navAvatar = document.querySelector('#avatarFront img');
-    if (navAvatar) {
-        var avatarUrl = "{% if profile.avatar %}{{ profile.avatar.url }}{% else %}{% static 'icons/АВАТАР.svg' %}{% endif %}";
-        navAvatar.src = avatarUrl;
-    }
-</script>
-
 {% endblock %}

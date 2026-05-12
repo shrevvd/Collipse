@@ -318,8 +318,16 @@
         <div class="now-playing placeholder-text" id="nowPlaying">Choose a track!</div>
         <div class="nav-icons" id="navIcons">
             <div class="glow-indicator"></div>
-            <span class="nav-icon active" data-tab="music"><img src="{% static 'icons/МУЗЫКА.svg' %}" alt="Музыка"></span>
-            <span class="nav-icon" data-tab="chat"><img src="{% static 'icons/ЧАТЫ.svg' %}" alt="Чаты"></span>
+            <a href="{% url 'track_list' %}">
+                <span class="nav-icon active" data-tab="music">
+                    <img src="{% static 'icons/МУЗЫКА.svg' %}" alt="Музыка">
+                </span>
+            </a>
+            <a href="{% url 'chat_list' %}">
+                <span class="nav-icon" data-tab="chat">
+                    <img src="{% static 'icons/ЧАТЫ.svg' %}" alt="Чаты">
+                </span>
+            </a>
             <span class="nav-icon" data-tab="settings"><img src="{% static 'icons/НАСТРОЙКИ.svg' %}" alt="Настройки"></span>
         </div>
     </nav>
@@ -327,7 +335,11 @@
     <a href="{% if request.user.is_authenticated %}{% url 'profile' request.user.username %}{% else %}{% url 'login' %}{% endif %}" id="avatarLink">
         <div class="avatar-circle avatar-back" id="avatarBack"></div>
         <div class="avatar-circle avatar-front" id="avatarFront">
-            <img src="{% static 'icons/АВАТАР.svg' %}" alt="avatar">
+            {% if request.user.is_authenticated and request.user.profile.avatar %}
+                <img src="{{ request.user.profile.avatar.url }}" alt="avatar">
+            {% else %}
+                <img src="{% static 'icons/АВАТАР.svg' %}" alt="avatar">
+            {% endif %}
         </div>
     </a>
 
@@ -483,7 +495,10 @@ discDislikeLink.addEventListener('click', function(e) {
     .then(r => r.json())
     .then(data => {
         if (data.status === 'disliked') {
+            discDislikeImg.src = discDislikeImg.src.replace('HEART_BROKEN.svg', 'DISLIKE_PRESSED.svg');
             playRandomTrack();
+        } else if (data.status === 'undisliked') {
+            discDislikeImg.src = discDislikeImg.src.replace('DISLIKE_PRESSED.svg', 'HEART_BROKEN.svg');
         }
     });
 });
