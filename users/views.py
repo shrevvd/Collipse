@@ -4,7 +4,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from .forms import RegisterForm
-from .models import Profile
+from .models import Profile, Friend
 
 def register(request):
     if request.method == 'POST':
@@ -36,8 +36,17 @@ def logout_view(request):
 def profile(request, username):
     user = get_object_or_404(User, username=username)
     profile = get_object_or_404(Profile, user=user)
+    friends = Friend.objects.filter(user=user)
+    
+    if request.user.is_authenticated:
+        is_friend = Friend.objects.filter(user=request.user, friend=user).exists()
+    else:
+        is_friend = False
+    
     context = {
         'profile': profile,
+        'friends': friends,
+        'is_friend': is_friend,
         'likes_count': 0,
         'playlists_count': 0,
         'uploads_count': 0,
@@ -58,3 +67,15 @@ def edit_profile(request):
         profile.save()
         return redirect('profile', username=request.user.username)
     return render(request, 'users/edit_profile.html', {'profile': profile})
+
+@login_required
+def add_friend(request, username):
+    friend_user = get_object_or_404(User, username=username)
+    Friend.objects.get_or_create(user=request.user, friend=friend_user)
+    return redirect('profile', username=username)
+
+@login_required
+def remove_friend(request, username):
+    friend_user = get_object_or_404(User, username=username)
+    Friend.objects.filter(user=request.user, friend=friend_user).delete()
+    return redirect('profile', username=username)

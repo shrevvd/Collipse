@@ -21,14 +21,20 @@
                 <h3 style="color: #D9D9D9; margin: 0; font-size: 22px; font-weight: 700;">{{ profile.user.username }}</h3>
                 <p style="color: #79787A; margin: 0; font-size: 13px;">@{{ profile.user.username }}</p>
             </div>
-            <!-- Окошко с описанием (нельзя нажать и поменять) -->
             <div class="search-box" style="flex: 1; pointer-events: none;">
                 <span style="color: #79787A; font-size: 14px;">{{ profile.bio|default:"No bio yet" }}</span>
             </div>
+            
             {% if request.user == profile.user %}
-            <a href="{% url 'edit_profile' %}">
-                <img src="{% static 'icons/КАРАНДАШ.svg' %}" width="22" height="22" style="filter: brightness(0) invert(0.7);">
-            </a>
+                <a href="{% url 'edit_profile' %}">
+                    <img src="{% static 'icons/КАРАНДАШ.svg' %}" width="22" height="22" style="filter: brightness(0) invert(0.7);">
+                </a>
+            {% elif request.user.is_authenticated %}
+                {% if is_friend %}
+                    <a href="{% url 'remove_friend' profile.user.username %}" class="upload-link" style="font-size: 14px;">Remove friend</a>
+                {% else %}
+                    <a href="{% url 'add_friend' profile.user.username %}" class="upload-link" style="font-size: 14px;">+ Add to friends</a>
+                {% endif %}
             {% endif %}
         </div>
         
@@ -62,16 +68,16 @@
                 {% if friends %}
                 <div class="d-flex gap-2 flex-wrap mt-2">
                     {% for friend in friends %}
-                    <div style="text-align: center;">
+                    <a href="{% url 'profile' friend.friend.username %}" style="text-align: center; text-decoration: none;">
                         <div style="width: 40px; height: 40px; border-radius: 50%; background: #353237; overflow: hidden; margin: 0 auto;">
-                            {% if friend.profile.avatar %}
-                                <img src="{{ friend.profile.avatar.url }}" width="40" height="40" style="object-fit: cover;">
+                            {% if friend.friend.profile.avatar %}
+                                <img src="{{ friend.friend.profile.avatar.url }}" width="40" height="40" style="object-fit: cover;">
                             {% else %}
                                 <img src="{% static 'icons/АВАТАР.svg' %}" width="40" height="40" style="object-fit: cover;">
                             {% endif %}
                         </div>
-                        <span style="color: #aaa; font-size: 10px;">{{ friend.username }}</span>
-                    </div>
+                        <span style="color: #aaa; font-size: 10px;">{{ friend.friend.username }}</span>
+                    </a>
                     {% endfor %}
                 </div>
                 {% else %}
