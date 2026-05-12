@@ -2,6 +2,7 @@
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="dark">
 <head>
+    <link rel="icon" type="image/svg+xml" href="{% static 'icons/НАУШНИКИ.svg' %}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Collipse</title>
@@ -273,6 +274,13 @@
             width: 55px;
         }
 
+        .disc-btn-pause {
+            width: 80px;
+            top: -66px;
+            left: 60px;
+
+        }
+
         .track-row { padding: 4px 12px; margin: 0 -12px; }
         .track-row:hover { background: rgba(255, 255, 255, 0.03); border-radius: 14px; }
 
@@ -329,32 +337,35 @@
         </div>
     </div>
 
-    <div class="disc-wrapper">
-        <div class="disc-container">
-            <!-- Задняя часть диска (таскается) -->
-            <img src="{% static 'player/ЗАДНЯЯ_ЧАСТЬ_ДИСКА.svg' %}" class="disc-layer disc-back" style="border-radius: 50%;" alt="">
-            
-            <!-- Обложка (крутится) -->
-            <div class="disc-cover-spin playing">
-                <img src="{% static 'player/диск.png' %}" alt="cover">
-            </div>
-            
-            <!-- Передняя часть диска -->
-            <img src="{% static 'player/ПЕРЕДНЯЯ_ЧАСТЬ_ДИСКА.svg' %}" class="disc-layer disc-front" alt="">
-            
-            <!-- Прямоугольник слева -->
-            <img src="{% static 'player/задняя_часть_диска_2.svg' %}" class="disc-rect" alt="">
-            
-            <!-- Кнопки на прямоугольнике -->
-            <img src="{% static 'player/NEXT_SONG_WHITE_VER.svg' %}" class="disc-btn disc-btn-next" alt="Next">
-            <img src="{% static 'player/PREV_SONG_WHITE_VER.svg' %}" class="disc-btn disc-btn-prev" alt="Prev">
-            <img src="{% static 'player/ПУСТОЕ_СЕРДЦЕ.svg' %}" class="disc-btn disc-btn-like" alt="Like">
-            <a href="#" id="discInfoLink">
-                <img src="{% static 'player/ИНФО_ДЛЯ_ТРЕКА.svg' %}" class="disc-btn disc-btn-info" alt="Info">
-            </a>
-            <img src="{% static 'player/РАЗБИТОЕ_СЕРДЦЕ.svg' %}" class="disc-btn disc-btn-dislike" alt="Dislike">
+   <div class="disc-wrapper">
+    <div class="disc-container">
+        <img src="{% static 'player/ЗАДНЯЯ_ЧАСТЬ_ДИСКА.svg' %}" class="disc-layer disc-back" style="border-radius: 50%;" alt="">
+        <div class="disc-cover-spin playing">
+            <img src="{% static 'player/диск.png' %}" alt="cover">
         </div>
+        <img src="{% static 'player/ПЕРЕДНЯЯ_ЧАСТЬ_ДИСКА.svg' %}" class="disc-layer disc-front" alt="">
+        <img src="{% static 'player/задняя_часть_диска_2.svg' %}" class="disc-rect" alt="">
+        
+        <img src="{% static 'player/NEXT_SONG_WHITE_VER.svg' %}" class="disc-btn disc-btn-next" alt="Next">
+        <img src="{% static 'player/PREV_SONG_WHITE_VER.svg' %}" class="disc-btn disc-btn-prev" alt="Prev">
+        <img src="{% static 'player/ПАУЗА.svg' %}" class="disc-btn disc-btn-pause" alt="Pause">
+        
+        <!-- Лайк -->
+        <a href="#" id="discLikeLink">
+            <img src="{% static 'player/HEART_EMPTY.svg' %}" class="disc-btn disc-btn-like" id="discLikeImg" alt="Like">
+        </a>
+        
+        <!-- Инфо -->
+        <a href="#" id="discInfoLink">
+            <img src="{% static 'player/ИНФО_ДЛЯ_ТРЕКА.svg' %}" class="disc-btn disc-btn-info" alt="Info">
+        </a>
+        
+        <!-- Дизлайк -->
+        <a href="#" id="discDislikeLink">
+            <img src="{% static 'player/HEART_BROKEN.svg' %}" class="disc-btn disc-btn-dislike" id="discDislikeImg" alt="Dislike">
+        </a>
     </div>
+</div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -393,5 +404,133 @@
 
     <audio id="audioPlayer" style="display: none;"></audio>
     
+    <script>
+const audio = document.getElementById('audioPlayer');
+const nowPlaying = document.getElementById('nowPlaying');
+const discInfoLink = document.getElementById('discInfoLink');
+const discLikeLink = document.getElementById('discLikeLink');
+const discLikeImg = document.getElementById('discLikeImg');
+const discDislikeLink = document.getElementById('discDislikeLink');
+const discDislikeImg = document.getElementById('discDislikeImg');
+let currentTrackRow = null;
+let currentTrackId = null;
+
+function getCSRFToken() {
+    const cookie = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
+    return cookie ? cookie.split('=')[1] : '';
+}
+
+const savedTrack = localStorage.getItem('currentTrack');
+const savedTime = localStorage.getItem('currentTime');
+if (savedTrack && audio) {
+    audio.src = savedTrack;
+    audio.currentTime = savedTime ? parseFloat(savedTime) : 0;
+    audio.play().catch(() => {});
+}
+
+window.addEventListener('beforeunload', function() {
+    if (audio && !audio.paused && audio.src) {
+        localStorage.setItem('currentTrack', audio.src);
+        localStorage.setItem('currentTime', audio.currentTime);
+    }
+});
+
+function playRandomTrack() {
+    fetch('/random-api/')
+        .then(r => r.json())
+        .then(data => {
+            if (data.audio_url) {
+                audio.src = data.audio_url;
+                audio.play();
+                currentTrackId = data.id;
+                if (nowPlaying) {
+                    nowPlaying.textContent = data.title;
+                    nowPlaying.classList.remove('placeholder-text');
+                    nowPlaying.classList.add('placeholder-text-active');
+                }
+                if (discInfoLink) discInfoLink.href = '/track/' + data.id + '/';
+                if (discLikeLink) discLikeLink.href = '/track/' + data.id + '/like/';
+                if (discDislikeLink) discDislikeLink.href = '/track/' + data.id + '/dislike/';
+                discLikeImg.src = discLikeImg.src.includes('ПУСТОЕ') ? discLikeImg.src : discLikeImg.src.replace('HEART_FULL', 'HEART_EMPTY');
+            }
+        });
+}
+
+discLikeLink.addEventListener('click', function(e) {
+    e.preventDefault();
+    if (!currentTrackId) return;
+    fetch('/track/' + currentTrackId + '/like/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'liked') {
+            discLikeImg.src = discLikeImg.src.replace('HEART_EMPTY', 'HEART_FULL');
+        } else if (data.status === 'unliked') {
+            discLikeImg.src = discLikeImg.src.replace('HEART_FULL', 'HEART_EMPTY');
+        }
+    });
+});
+
+discDislikeLink.addEventListener('click', function(e) {
+    e.preventDefault();
+    if (!currentTrackId) return;
+    fetch('/track/' + currentTrackId + '/dislike/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'disliked') {
+            playRandomTrack();
+        }
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.track-row').forEach(row => {
+        row.addEventListener('click', function() {
+            const audioUrl = this.dataset.audio;
+            if (!audioUrl) return;
+            if (currentTrackRow === this) {
+                audio.paused ? audio.play() : audio.pause();
+            } else {
+                currentTrackRow = this;
+                audio.src = audioUrl;
+                audio.play();
+                const titleDiv = this.querySelector('div[style*="flex: 1"] div[style*="color: white"]');
+                if (titleDiv && nowPlaying) {
+                    nowPlaying.textContent = titleDiv.textContent.trim();
+                    nowPlaying.classList.remove('placeholder-text');
+                    nowPlaying.classList.add('placeholder-text-active');
+                }
+                const infoLink = this.querySelector('.track-info-icon');
+                if (infoLink && discInfoLink) discInfoLink.href = infoLink.href;
+                const trackUrl = this.querySelector('.track-info-icon');
+                if (trackUrl) {
+                    const id = trackUrl.href.split('/track/')[1]?.split('/')[0];
+                    if (id) currentTrackId = id;
+                }
+                localStorage.setItem('currentTrack', audioUrl);
+            }
+        });
+    });
+    if (audio) {
+        audio.addEventListener('ended', function() {
+            currentTrackRow = null;
+            if (nowPlaying) {
+                nowPlaying.textContent = 'Choose a track!';
+                nowPlaying.classList.remove('placeholder-text-active');
+                nowPlaying.classList.add('placeholder-text');
+            }
+        });
+    }
+});
+</script>
+
+</body>
+</html>
+
 </body>
 </html>

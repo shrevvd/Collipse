@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Count
-from .models import Track, Artist, Album, Genre
+from django.http import JsonResponse
+from .models import Track, Artist, Album, Genre, Like, Dislike, UserGenreScore
 
 
 def track_list(request):
@@ -42,3 +43,61 @@ def album_detail(request, pk):
     album = get_object_or_404(Album, pk=pk)
     tracks = album.tracks.all()
     return render(request, 'music/album_detail.html', {'album': album, 'tracks': tracks})
+
+
+def track_like(request, track_id):
+    if not request.user.is_authenticated:
+        return JsonResponse({'status': 'error', 'message': 'Login required'}, status=401)
+    
+    track = get_object_or_404(Track, pk=track_id)
+    
+    existing_like = Like.objects.filter(user=request.user, track=track)
+    
+    if existing_like.exists():
+        existing_like.delete()
+        # уменьшить score для жанров
+        return JsonResponse({'status': 'unliked'})
+    else:
+        Dislike.objects.filter(user=request.user, track=track).delete()
+        Like.objects.create(user=request.user, track=track)
+        # увеличить score для жанров
+        return JsonResponse({'status': 'liked'})
+    
+def track_dislike(request, track_id):
+    if not request.user.is_authenticated:
+        return JsonResponse({'status': 'error', 'message': 'Login reqired'}, status=401)
+    
+    track = get_object_or_404(Track, pk=track_id)
+    
+    existing_dislike = Dislike.objects.filter(user=request.user, track=track)
+    
+    if existing_dislike.exists():
+        existing_dislike.delete()
+        return JsonResponse({'status': 'unliked'})
+    else:
+        # Удаляем лайк, если был
+        Like.objects.filter(user=request.user, track=track).delete()
+        # Создаём дизлайк
+        Dislike.objects.create(user=request.user, track=track)
+        # Обновляем рейтинг жанров (-1 к каждому жанру)
+        for genre in track.genre.all():
+            user_score, created = UserGenreScore.objects.get_or_create(user=request.user, genre=genre)
+            user_score.score -= 1
+            user_score.save()
+        return JsonResponse({'status': 'disliked'})
+
+def random_track_api(request):
+    tracks = Track.objects.filter(audio_file__isnull=False)
+    if request.user.is_authenticated:
+        tracks = tracks.exclude(dislike__user=request.user)
+    track = tracks.order_by('?').first()
+    if track:
+        return JsonResponse({
+            'id': track.pk,
+            'title': track.title,
+            'artist': track.artist.name,
+            'audio_url': track.audio_file.url,
+            'cover_url': track.cover.url if track.cover else None,
+            'duration': track.duration,
+        })
+    return JsonResponse({'status': 'empty', 'message': 'No tracks available'})

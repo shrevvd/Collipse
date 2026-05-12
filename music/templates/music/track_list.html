@@ -20,7 +20,7 @@
                 <script>
                     var randomUrl = "{% url 'random_track' %}";
                 </script>
-                <img src="{% static 'icons/ПРОИГРЫВАТЕЛЬ.svg' %}" alt="Play" class="play-icon mt-3" onclick="location.href=randomUrl">
+                <img src="{% static 'icons/ПРОИГРЫВАТЕЛЬ.svg' %}" alt="Play" class="play-icon mt-3" onclick="playRandomTrack()">
                 <p class="upload-link mt-3">Upload your track</p>
             </div>
         </div>
@@ -82,63 +82,6 @@
     document.getElementById('mainNavbar').classList.remove('profile-mode');
     document.getElementById('avatarFront').classList.remove('profile-expanded');
     document.getElementById('avatarBack').classList.remove('profile-expanded');
-
-document.addEventListener('DOMContentLoaded', function() {
-    const audio = document.getElementById('audioPlayer');
-    const nowPlaying = document.getElementById('nowPlaying');
-    
-    if (!audio) {
-        console.error('audioPlayer not found!');
-        return;
-    }
-    let currentTrack = null;
-
-    const discInfoLink = document.getElementById('discInfoLink');
-    
-    function updateNowPlaying(trackElement) {
-        if (trackElement) {
-            const titleDiv = trackElement.querySelector('div[style*="flex: 1"] div[style*="color: white"]');
-            if (titleDiv) {
-                nowPlaying.textContent = titleDiv.textContent.trim();
-                nowPlaying.classList.remove('placeholder-text');
-                nowPlaying.classList.add('placeholder-text-active');
-            }
-            // Обновляем ссылку на диске (внутри if trackElement)
-            const infoLink = trackElement.querySelector('.track-info-icon');
-            if (infoLink && discInfoLink) {
-                discInfoLink.href = infoLink.href;
-            }
-        } else {
-            nowPlaying.textContent = 'Choose a song!';
-            nowPlaying.classList.remove('placeholder-text-active');
-            nowPlaying.classList.add('placeholder-text');
-            if (discInfoLink) discInfoLink.href = '#';
-        }
-    }
-
-    document.querySelectorAll('.track-row').forEach(row => {
-        row.addEventListener('click', function() {
-            const audioUrl = this.dataset.audio;
-            if (!audioUrl) return;
-            
-            if (currentTrack === this) {
-                audio.paused ? audio.play() : audio.pause();
-            } else {
-                currentTrack = this;
-                audio.src = audioUrl;
-                audio.play();
-                updateNowPlaying(this);
-            }
-        });
-    });
-    
-    audio.addEventListener('ended', function() {
-        currentTrack = null;
-        updateNowPlaying(null);
-    });
-});
-
-
 </script>
 
 {% endblock %}
