@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="sticky-left">
+            <!-- Поиск -->
+            <div class="card-custom-left p-3 mb-3">
+                <div class="search-box">
+                    <input type="text" placeholder="Find a chat...">
+                    <img src="{% static 'icons/ЛУПА.svg' %}" alt="Search" style="cursor: pointer;">
+                </div>
+            </div>
+            
+            <!-- Chat Finder -->
+            <div class="card-custom-rec p-4 text-center">
+                <h5 class="text-white fw-bold">Find a chat</h5>
+                <a href="{% url 'random_chat' %}">
+                    <img src="{% static 'icons/CHAT_FINDER.svg' %}" alt="Find Chat" class="play-icon mt-3">
+                </a>
+                <p class="upload-link mt-3">Create a group</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card-custom-right p-4">
+            <div class="d-flex gap-2 mb-3">
+                <button class="tab-btn active">Chats</button>
+                <button class="tab-btn">Groups</button>
+                <button class="tab-btn">People</button>
+            </div>
+            <hr style="border-color: #D9D9D9; opacity: 1;">
+            
+            <!-- Тестовые чаты -->
+            
+                    {% for chat in chats %}
+                    <a href="{% url 'chat_view' chat.user.username %}" style="text-decoration: none; color: inherit;">
+                        <div class="d-flex align-items-center track-row">
+                            <div style="width: 40px; height: 40px; border-radius: 50%; background: #353237; margin-right: 10px; overflow: hidden;">
+                                {% if chat.user.profile.avatar %}
+                                    <img src="{{ chat.user.profile.avatar.url }}" width="40" height="40" style="object-fit: cover;">
+                                {% else %}
+                                    <img src="{% static 'icons/АВАТАР.svg' %}" width="40" height="40" style="object-fit: cover;">
+                                {% endif %}
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="color: white; font-size: 14px;">{{ chat.user.username }}</div>
+                                <div style="color: #aaa; font-size: 12px; font-weight: 300;">{{ chat.last_msg.text|truncatechars:40 }}</div>
+                            </div>
+                            <span style="color: #aaa; font-size: 12px;">{{ chat.last_msg.created_at|date:"H:i" }}</span>
+                        </div>
+                    </a>
+                    {% if not forloop.last %}
+                    <hr style="border-color: #D9D9D9; opacity: 0.11; margin: 0;">
+                    {% endif %}
+                    {% empty %}
+                    <p style="color: #79787A; text-align: center;">No chats yet</p>
+                    {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('mainNavbar').classList.remove('profile-mode');
+    document.getElementById('avatarFront').classList.remove('profile-expanded');
+    document.getElementById('avatarBack').classList.remove('profile-expanded');
+    
+    document.querySelectorAll('.nav-icon').forEach(function(i) { i.classList.remove('active'); });
+    var musicIcon = document.querySelector('.nav-icon[data-tab="chat"]');
+    if (musicIcon) musicIcon.classList.add('active');
+    if (indicator && musicIcon) {
+        indicator.style.left = (musicIcon.offsetLeft + musicIcon.offsetWidth/2 - 27) + 'px';
+    }
+</script>
+
+{% endblock %}

@@ -11,6 +11,5 @@ urlpatterns = [
     path('random-api/', views.random_track_api, name='random_track_api'),
     path('track/<int:track_id>/like/', views.track_like, name='track_like'),
     path('track/<int:track_id>/dislike/', views.track_dislike, name='track_dislike'),
-    path('chats/', views.chat_list, name='chat_list'),
     path('random-chat/', views.random_chat, name='random_chat'),
 ]

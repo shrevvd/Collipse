@@ -9,4 +9,6 @@ urlpatterns = [
     path('edit/', views.edit_profile, name='edit_profile'),
     path('add-friend/<str:username>/', views.add_friend, name='add_friend'),
     path('remove-friend/<str:username>/', views.remove_friend, name='remove_friend'),
+    path('chat/<str:username>/', views.chat_view, name='chat_view'),
+    path('chats/', views.chat_list, name='chat_list'),
 ]

@@ -4,7 +4,8 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from .forms import RegisterForm
-from .models import Profile, Friend
+from .models import Profile, Friend, Message
+from django.db import models
 
 def register(request):
     if request.method == 'POST':
@@ -79,3 +80,43 @@ def remove_friend(request, username):
     friend_user = get_object_or_404(User, username=username)
     Friend.objects.filter(user=request.user, friend=friend_user).delete()
     return redirect('profile', username=username)
+
+@login_required
+def chat_list(request):
+    # Найти всех, с кем переписывался пользователь
+    sent_to = Message.objects.filter(sender=request.user).values_list('receiver', flat=True).distinct()
+    received_from = Message.objects.filter(receiver=request.user).values_list('sender', flat=True).distinct()
+    chat_user_ids = set(list(sent_to) + list(received_from))
+    chat_users = User.objects.filter(id__in=chat_user_ids)
+    
+    # Для каждого — последнее сообщение
+    chats = []
+    for user in chat_users:
+        last_msg = Message.objects.filter(
+            (models.Q(sender=request.user, receiver=user) | models.Q(sender=user, receiver=request.user))
+        ).order_by('-created_at').first()
+        chats.append({'user': user, 'last_msg': last_msg})
+    
+    # Сортировать по дате последнего сообщения
+    chats.sort(key=lambda x: x['last_msg'].created_at if x['last_msg'] else user.date_joined, reverse=True)
+    
+    return render(request, 'users/chat_list.html', {'chats': chats})
+
+@login_required
+def chat_view(request, username):
+    receiver = get_object_or_404(User, username=username)
+    messages = Message.objects.filter(
+        models.Q(sender=request.user, receiver=receiver) |
+        models.Q(sender=receiver, receiver=request.user)
+    ).order_by('created_at')
+    
+    if request.method == 'POST':
+        text = request.POST.get('text', '').strip()
+        if text:
+            Message.objects.create(sender=request.user, receiver=receiver, text=text)
+        return redirect('chat_view', username=username)
+    
+    return render(request, 'users/chat.html', {
+        'receiver': receiver,
+        'messages': messages
+    })

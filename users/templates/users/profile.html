@@ -30,6 +30,7 @@
                     <img src="{% static 'icons/КАРАНДАШ.svg' %}" width="22" height="22" style="filter: brightness(0) invert(0.7);">
                 </a>
             {% elif request.user.is_authenticated %}
+                <a href="{% url 'chat_view' profile.user.username %}" class="upload-link" style="font-size: 14px; margin-left: 10px;">Message</a>
                 {% if is_friend %}
                     <a href="{% url 'remove_friend' profile.user.username %}" class="upload-link" style="font-size: 14px;">Remove friend</a>
                 {% else %}

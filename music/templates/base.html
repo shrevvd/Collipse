@@ -381,64 +381,97 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const indicator = document.querySelector('.glow-indicator');
-        const icons = document.querySelectorAll('.nav-icon');
-        const activeIcon = document.querySelector('.nav-icon.active');
-        if (activeIcon) {
-            indicator.style.left = (activeIcon.offsetLeft + activeIcon.offsetWidth/2 - 27) + 'px';
-        }
-        icons.forEach(icon => {
-            icon.addEventListener('click', function() {
-                icons.forEach(i => i.classList.remove('active'));
-                this.classList.add('active');
+// ============================================================
+// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ (доступны всем скриптам)
+// ============================================================
+var indicator = document.querySelector('.glow-indicator');
+var navIcons = document.querySelectorAll('.nav-icon');
+var disc = document.querySelector('.disc-back');
+var wrapper = document.querySelector('.disc-wrapper');
+
+// ============================================================
+// 1. ПОДСВЕТКА ИКОНОК В НАВБАРЕ
+// ============================================================
+(function() {
+    var activeIcon = document.querySelector('.nav-icon.active');
+    if (activeIcon && indicator) {
+        indicator.style.left = (activeIcon.offsetLeft + activeIcon.offsetWidth/2 - 27) + 'px';
+    }
+    navIcons.forEach(function(icon) {
+        icon.addEventListener('click', function() {
+            navIcons.forEach(function(i) { i.classList.remove('active'); });
+            this.classList.add('active');
+            if (indicator) {
                 indicator.style.left = (this.offsetLeft + this.offsetWidth/2 - 27) + 'px';
-            });
+            }
         });
+    });
+})();
 
-        // Drag диска
-        const disc = document.querySelector('.disc-back');
-        const wrapper = document.querySelector('.disc-wrapper');
-        let isDragging = false, startX, startY, startLeft, startBottom;
-        disc.addEventListener('mousedown', function(e) {
-            isDragging = true;
-            startX = e.clientX; startY = e.clientY;
-            startLeft = parseInt(window.getComputedStyle(wrapper).left) || 0;
-            startBottom = parseInt(window.getComputedStyle(wrapper).bottom) || 0;
-            e.preventDefault();
-        });
-        document.addEventListener('mousemove', function(e) {
-            if (!isDragging) return;
-            wrapper.style.left = (startLeft + e.clientX - startX) + 'px';
-            wrapper.style.bottom = (startBottom + startY - e.clientY) + 'px';
-        });
-        document.addEventListener('mouseup', function() { isDragging = false; });
-    </script>
-
-    <audio id="audioPlayer" style="display: none;"></audio>
+// ============================================================
+// 2. DRAG ДИСКА
+// ============================================================
+(function() {
+    if (!disc || !wrapper) return;
     
-    <script>
-const audio = document.getElementById('audioPlayer');
-const nowPlaying = document.getElementById('nowPlaying');
-const discInfoLink = document.getElementById('discInfoLink');
-const discLikeLink = document.getElementById('discLikeLink');
-const discLikeImg = document.getElementById('discLikeImg');
-const discDislikeLink = document.getElementById('discDislikeLink');
-const discDislikeImg = document.getElementById('discDislikeImg');
-let currentTrackRow = null;
-let currentTrackId = null;
+    var savedLeft = localStorage.getItem('discLeft');
+    var savedBottom = localStorage.getItem('discBottom');
+    if (savedLeft && savedBottom) {
+        wrapper.style.left = savedLeft;
+        wrapper.style.bottom = savedBottom;
+    }
+    
+    var isDragging = false, startX, startY, startLeft, startBottom;
+    
+    disc.addEventListener('mousedown', function(e) {
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        var style = window.getComputedStyle(wrapper);
+        startLeft = parseInt(style.left) || 0;
+        startBottom = parseInt(style.bottom) || 0;
+        e.preventDefault();
+    });
+    
+    document.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        wrapper.style.left = (startLeft + e.clientX - startX) + 'px';
+        wrapper.style.bottom = (startBottom + startY - e.clientY) + 'px';
+        localStorage.setItem('discLeft', wrapper.style.left);
+        localStorage.setItem('discBottom', wrapper.style.bottom);
+    });
+    
+    document.addEventListener('mouseup', function() { isDragging = false; });
+})();
+
+// ============================================================
+// 3. ПЛЕЕР, ЛАЙКИ, ДИЗЛАЙКИ
+// ============================================================
+var audio = document.getElementById('audioPlayer');
+var nowPlaying = document.getElementById('nowPlaying');
+var discInfoLink = document.getElementById('discInfoLink');
+var discLikeLink = document.getElementById('discLikeLink');
+var discLikeImg = document.getElementById('discLikeImg');
+var discDislikeLink = document.getElementById('discDislikeLink');
+var discDislikeImg = document.getElementById('discDislikeImg');
+var currentTrackRow = null;
+var currentTrackId = null;
 
 function getCSRFToken() {
-    const cookie = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
+    var cookie = document.cookie.split('; ').find(function(row) { return row.startsWith('csrftoken='); });
     return cookie ? cookie.split('=')[1] : '';
 }
 
-const savedTrack = localStorage.getItem('currentTrack');
-const savedTime = localStorage.getItem('currentTime');
-if (savedTrack && audio) {
-    audio.src = savedTrack;
-    audio.currentTime = savedTime ? parseFloat(savedTime) : 0;
-    audio.play().catch(() => {});
-}
+// Восстановление трека
+(function() {
+    var savedTrack = localStorage.getItem('currentTrack');
+    var savedTime = localStorage.getItem('currentTime');
+    if (savedTrack && audio) {
+        audio.src = savedTrack;
+        audio.currentTime = savedTime ? parseFloat(savedTime) : 0;
+        audio.play().catch(function() {});
+    }
+})();
 
 window.addEventListener('beforeunload', function() {
     if (audio && !audio.paused && audio.src) {
@@ -447,10 +480,11 @@ window.addEventListener('beforeunload', function() {
     }
 });
 
+// Music RECS
 function playRandomTrack() {
     fetch('/random-api/')
-        .then(r => r.json())
-        .then(data => {
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
             if (data.audio_url) {
                 audio.src = data.audio_url;
                 audio.play();
@@ -463,50 +497,57 @@ function playRandomTrack() {
                 if (discInfoLink) discInfoLink.href = '/track/' + data.id + '/';
                 if (discLikeLink) discLikeLink.href = '/track/' + data.id + '/like/';
                 if (discDislikeLink) discDislikeLink.href = '/track/' + data.id + '/dislike/';
-                discLikeImg.src = discLikeImg.src.includes('ПУСТОЕ') ? discLikeImg.src : discLikeImg.src.replace('HEART_FULL', 'HEART_EMPTY');
+                if (discLikeImg) discLikeImg.src = discLikeImg.src.replace('HEART_FULL', 'HEART_EMPTY');
             }
         });
 }
 
-discLikeLink.addEventListener('click', function(e) {
-    e.preventDefault();
-    if (!currentTrackId) return;
-    fetch('/track/' + currentTrackId + '/like/', {
-        method: 'POST',
-        headers: { 'X-CSRFToken': getCSRFToken() }
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.status === 'liked') {
-            discLikeImg.src = discLikeImg.src.replace('HEART_EMPTY', 'HEART_FULL');
-        } else if (data.status === 'unliked') {
-            discLikeImg.src = discLikeImg.src.replace('HEART_FULL', 'HEART_EMPTY');
-        }
+// Лайк
+if (discLikeLink) {
+    discLikeLink.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (!currentTrackId) return;
+        fetch('/track/' + currentTrackId + '/like/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRFToken() }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.status === 'liked') {
+                discLikeImg.src = discLikeImg.src.replace('HEART_EMPTY', 'HEART_FULL');
+            } else if (data.status === 'unliked') {
+                discLikeImg.src = discLikeImg.src.replace('HEART_FULL', 'HEART_EMPTY');
+            }
+        });
     });
-});
+}
 
-discDislikeLink.addEventListener('click', function(e) {
-    e.preventDefault();
-    if (!currentTrackId) return;
-    fetch('/track/' + currentTrackId + '/dislike/', {
-        method: 'POST',
-        headers: { 'X-CSRFToken': getCSRFToken() }
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.status === 'disliked') {
-            discDislikeImg.src = discDislikeImg.src.replace('HEART_BROKEN.svg', 'DISLIKE_PRESSED.svg');
-            playRandomTrack();
-        } else if (data.status === 'undisliked') {
-            discDislikeImg.src = discDislikeImg.src.replace('DISLIKE_PRESSED.svg', 'HEART_BROKEN.svg');
-        }
+// Дизлайк
+if (discDislikeLink) {
+    discDislikeLink.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (!currentTrackId) return;
+        fetch('/track/' + currentTrackId + '/dislike/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRFToken() }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.status === 'disliked') {
+                discDislikeImg.src = discDislikeImg.src.replace('HEART_BROKEN.svg', 'DISLIKE_PRESSED.svg');
+                playRandomTrack();
+            } else if (data.status === 'undisliked') {
+                discDislikeImg.src = discDislikeImg.src.replace('DISLIKE_PRESSED.svg', 'HEART_BROKEN.svg');
+            }
+        });
     });
-});
+}
 
+// Клик по трекам
 document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.track-row').forEach(row => {
+    document.querySelectorAll('.track-row').forEach(function(row) {
         row.addEventListener('click', function() {
-            const audioUrl = this.dataset.audio;
+            var audioUrl = this.dataset.audio;
             if (!audioUrl) return;
             if (currentTrackRow === this) {
                 audio.paused ? audio.play() : audio.pause();
@@ -514,17 +555,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 currentTrackRow = this;
                 audio.src = audioUrl;
                 audio.play();
-                const titleDiv = this.querySelector('div[style*="flex: 1"] div[style*="color: white"]');
+                var titleDiv = this.querySelector('div[style*="flex: 1"] div[style*="color: white"]');
                 if (titleDiv && nowPlaying) {
                     nowPlaying.textContent = titleDiv.textContent.trim();
                     nowPlaying.classList.remove('placeholder-text');
                     nowPlaying.classList.add('placeholder-text-active');
                 }
-                const infoLink = this.querySelector('.track-info-icon');
+                var infoLink = this.querySelector('.track-info-icon');
                 if (infoLink && discInfoLink) discInfoLink.href = infoLink.href;
-                const trackUrl = this.querySelector('.track-info-icon');
+                var trackUrl = this.querySelector('.track-info-icon');
                 if (trackUrl) {
-                    const id = trackUrl.href.split('/track/')[1]?.split('/')[0];
+                    var id = trackUrl.href.split('/track/')[1]?.split('/')[0];
                     if (id) currentTrackId = id;
                 }
                 localStorage.setItem('currentTrack', audioUrl);
@@ -543,9 +584,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-
-</body>
-</html>
 
 </body>
 </html>
