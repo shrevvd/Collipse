@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from .forms import RegisterForm
 from .models import Profile, Friend, Message
 from django.db import models
+from django.http import JsonResponse
 
 def register(request):
     if request.method == 'POST':
@@ -120,3 +121,23 @@ def chat_view(request, username):
         'receiver': receiver,
         'messages': messages
     })
+    
+
+def search_users(request):
+    query = request.GET.get('q', '').strip()
+    if not query:
+        return JsonResponse([], safe=False)
+    
+    users = User.objects.filter(username__icontains=query).exclude(id=request.user.id)[:10]
+    
+    results = []
+    for u in users:
+        avatar = None
+        if hasattr(u, 'profile') and u.profile.avatar:
+            avatar = u.profile.avatar.url
+        results.append({
+            'id': u.pk,
+            'username': u.username,
+            'avatar': avatar,
+        })
+    return JsonResponse(results, safe=False)

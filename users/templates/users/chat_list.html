@@ -6,11 +6,12 @@
     <div class="col-md-4">
         <div class="sticky-left">
             <!-- Поиск -->
-            <div class="card-custom-left p-3 mb-3">
+            <div class="card-custom-left p-3 mb-3" style="position: relative;">
                 <div class="search-box">
-                    <input type="text" placeholder="Find a chat...">
-                    <img src="{% static 'icons/ЛУПА.svg' %}" alt="Search" style="cursor: pointer;">
+                    <input type="text" id="userSearch" placeholder="Find user..." oninput="searchUsers()" autocomplete="off">
+                    <img src="{% static 'icons/ЛУПА.svg' %}" alt="Search">
                 </div>
+                <div id="searchResults" style="position: absolute; top: 100%; left: 0; right: 0; background: #2A282C; border-radius: 0 0 12px 12px; z-index: 200; display: none; max-height: 300px; overflow-y: auto;"></div>
             </div>
             
             <!-- Chat Finder -->
@@ -74,6 +75,53 @@
     if (indicator && musicIcon) {
         indicator.style.left = (musicIcon.offsetLeft + musicIcon.offsetWidth/2 - 27) + 'px';
     }
+</script>
+
+<script>
+var searchTimeout;
+function searchUsers() {
+    clearTimeout(searchTimeout);
+    var query = document.getElementById('userSearch').value.trim();
+    var resultsDiv = document.getElementById('searchResults');
+    
+    if (query.length < 1) {
+        resultsDiv.style.display = 'none';
+        return;
+    }
+    
+    searchTimeout = setTimeout(function() {
+        fetch('/users/search-users/?q=' + encodeURIComponent(query))
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.length === 0) {
+                    resultsDiv.innerHTML = '<p style="color: #79787A; padding: 10px;">Nothing found</p>';
+                } else {
+                    var html = '';
+                    data.forEach(function(u) {
+                        html += '<a href="/users/profile/' + u.username + '/" style="text-decoration: none;">' +
+                            '<div class="search-result-row" style="padding: 8px 15px; cursor: pointer; display: flex; align-items: center; gap: 10px;">' +
+                                '<div style="width: 30px; height: 30px; border-radius: 50%; background: #353237; overflow: hidden;">' +
+                                    (u.avatar ? '<img src="' + u.avatar + '" width="30" height="30" style="object-fit: cover;">' : '<span style="color: #aaa; font-size: 10px;">@</span>') +
+                                '</div>' +
+                                '<div>' +
+                                    '<div style="color: white; font-size: 13px;">' + u.username + '</div>' +
+                                '</div>' +
+                            '</div>' +
+                        '</a>';
+                    });
+                    resultsDiv.innerHTML = html;
+                }
+                resultsDiv.style.display = 'block';
+            });
+    }, 300);
+}
+
+document.addEventListener('click', function(e) {
+    var results = document.getElementById('searchResults');
+    if (results && !e.target.closest('#userSearch') && !e.target.closest('#searchResults')) {
+        results.style.display = 'none';
+    }
+});
 </script>
 
 {% endblock %}

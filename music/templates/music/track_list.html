@@ -7,11 +7,12 @@
     <div class="col-md-4">
          <div class="sticky-left">
             <!-- Поиск (одна карточка, не две) -->
-            <div class="card-custom-left p-3 mb-3">
+            <div class="card-custom-left p-3 mb-3" style="position: relative;">
                 <div class="search-box">
-                    <input type="text" placeholder="Find a track...">
-                    <img src="{% static 'icons/ЛУПА.svg' %}" alt="Search" style="cursor: pointer;" onclick="console.log('Search:', document.getElementById('searchInput').value)">
+                    <input type="text" id="trackSearch" placeholder="Find a track..." oninput="searchTracks()" autocomplete="off">
+                    <img src="{% static 'icons/ЛУПА.svg' %}" alt="Search">
                 </div>
+                <div id="searchResults" style="position: absolute; top: 100%; left: 0; right: 0; background: #2A282C; border-radius: 0 0 12px 12px; z-index: 200; display: none; max-height: 300px; overflow-y: auto;"></div>
             </div>
             
             <!-- Music RECS -->
@@ -29,9 +30,9 @@
     <div class="col-md-8">
         <div class="card-custom-right p-4">
             <div class="d-flex gap-2 mb-3">
-                <button class="tab-btn active">Likes</button>
-                <button class="tab-btn">Playlists</button>
-                <button class="tab-btn">Albums</button>
+                <button class="tab-btn active" onclick="currentMode='likes'; this.classList.add('active'); this.nextElementSibling.classList.remove('active'); this.nextElementSibling.nextElementSibling.classList.remove('active');">Likes</button>
+                <button class="tab-btn" onclick="currentMode='all'; this.classList.add('active'); this.previousElementSibling.classList.remove('active'); this.nextElementSibling.classList.remove('active');">Playlists</button>
+                <button class="tab-btn" onclick="currentMode='all'; this.classList.add('active'); this.previousElementSibling.classList.remove('active'); this.previousElementSibling.previousElementSibling.classList.remove('active');">Albums</button>
             </div>
             <hr style="border-color: #D9D9D9; opacity: 1;">
             
@@ -86,9 +87,63 @@
     document.querySelectorAll('.nav-icon').forEach(function(i) { i.classList.remove('active'); });
     var musicIcon = document.querySelector('.nav-icon[data-tab="music"]');
     if (musicIcon) musicIcon.classList.add('active');
-    if (indicator && musicIcon) {
-        indicator.style.left = (musicIcon.offsetLeft + musicIcon.offsetWidth/2 - 27) + 'px';
+    
+    // Ждём загрузки base.html-скрипта
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof indicator !== 'undefined' && musicIcon) {
+            indicator.style.left = (musicIcon.offsetLeft + musicIcon.offsetWidth/2 - 27) + 'px';
+        }
+    });
+</script>
+
+<script>
+var searchTimeout;
+function searchTracks() {
+    clearTimeout(searchTimeout);
+    var query = document.getElementById('trackSearch').value.trim();
+    var resultsDiv = document.getElementById('searchResults');
+    
+    if (query.length < 1) {
+        resultsDiv.style.display = 'none';
+        return;
     }
+    
+    searchTimeout = setTimeout(function() {
+        fetch('/search-tracks/?q=' + encodeURIComponent(query))
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.length === 0) {
+                    resultsDiv.innerHTML = '<p style="color: #79787A; padding: 10px;">Nothing found</p>';
+                } else {
+                    var html = '';
+                    data.forEach(function(t) {
+                        html += '<div class="search-result-row" onclick="playSearchedTrack(\'' + t.audio_url + '\', \'' + t.title + '\', ' + t.id + ')" style="padding: 8px 15px; cursor: pointer; display: flex; align-items: center; gap: 10px;">' +
+                            '<div style="width: 30px; height: 30px; border-radius: 4px; background: #353237; overflow: hidden;">' +
+                                (t.cover_url ? '<img src="' + t.cover_url + '" width="30" height="30" style="object-fit: cover;">' : '<span style="color: #aaa; font-size: 10px;">♪</span>') +
+                            '</div>' +
+                            '<div>' +
+                                '<div style="color: white; font-size: 13px;">' + t.title + '</div>' +
+                                '<div style="color: #aaa; font-size: 11px;">' + t.artist + '</div>' +
+                            '</div>' +
+                        '</div>';
+                    });
+                    resultsDiv.innerHTML = html;
+                }
+                resultsDiv.style.display = 'block';
+            });
+    }, 300);
+}
+
+function playSearchedTrack(url, title, id) {
+    window.location.href = '/track/' + id + '/';
+}
+
+document.addEventListener('click', function(e) {
+    var results = document.getElementById('searchResults');
+    if (results && !e.target.closest('#trackSearch') && !e.target.closest('#searchResults')) {
+        results.style.display = 'none';
+    }
+});
 </script>
 
 {% endblock %}

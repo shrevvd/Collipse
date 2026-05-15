@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.http import JsonResponse
 from .models import Track, Artist, Album, Genre, Like, Dislike, UserGenreScore, User
 
@@ -93,13 +93,16 @@ def random_track_api(request):
         tracks = tracks.exclude(dislike__user=request.user)
     track = tracks.order_by('?').first()
     if track:
+        is_liked = Like.objects.filter(user=request.user, track=track).exists() if request.user.is_authenticated else False
+        is_disliked = Dislike.objects.filter(user=request.user, track=track).exists() if request.user.is_authenticated else False
         return JsonResponse({
             'id': track.pk,
             'title': track.title,
             'artist': track.artist.name,
             'audio_url': track.audio_file.url,
             'cover_url': track.cover.url if track.cover else None,
-            'duration': track.duration,
+            'is_liked': is_liked,
+            'is_disliked': is_disliked,
         })
     return JsonResponse({'status': 'empty', 'message': 'No tracks available'})
 
@@ -111,3 +114,44 @@ def random_chat(request):
 
 def chat_list(request):
     return render(request, 'music/chat_list.html')
+
+def search_tracks(request):
+    query = request.GET.get('q', '').strip()
+    if not query:
+        return JsonResponse([], safe=False)
+    
+    tracks = Track.objects.filter(
+        Q(title__icontains=query) | Q(artist__name__icontains=query)
+    ).select_related('artist').exclude(audio_file='')[:10]
+    
+    results = []
+    for t in tracks:
+        results.append({
+            'id': t.pk,
+            'title': t.title,
+            'artist': t.artist.name,
+            'audio_url': t.audio_file.url if t.audio_file else None,
+            'cover_url': t.cover.url if t.cover else None,
+        })
+    return JsonResponse(results, safe=False)
+
+def liked_tracks_api(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'status': 'error', 'message': 'Login required'}, status=401)
+    
+    liked_track_ids = Like.objects.filter(user=request.user).values_list('track_id', flat=True)
+    track = Track.objects.filter(id__in=liked_track_ids, audio_file__isnull=False).order_by('?').first()
+    
+    if track:
+        is_liked = True
+        is_disliked = Dislike.objects.filter(user=request.user, track=track).exists()
+        return JsonResponse({
+            'id': track.pk,
+            'title': track.title,
+            'artist': track.artist.name,
+            'audio_url': track.audio_file.url,
+            'cover_url': track.cover.url if track.cover else None,
+            'is_liked': is_liked,
+            'is_disliked': is_disliked,
+        })
+    return JsonResponse({'status': 'empty', 'message': 'No liked tracks'})

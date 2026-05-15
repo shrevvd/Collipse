@@ -12,4 +12,6 @@ urlpatterns = [
     path('track/<int:track_id>/like/', views.track_like, name='track_like'),
     path('track/<int:track_id>/dislike/', views.track_dislike, name='track_dislike'),
     path('random-chat/', views.random_chat, name='random_chat'),
+    path('search-tracks/', views.search_tracks, name='search_tracks'),
+    path('liked-tracks-api/', views.liked_tracks_api, name='liked_tracks_api'),
 ]
