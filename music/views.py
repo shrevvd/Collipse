@@ -5,7 +5,12 @@ from .models import Track, Artist, Album, Genre, Like, Dislike, UserGenreScore, 
 
 
 def track_list(request):
-    tracks = Track.objects.select_related('artist', 'album').prefetch_related('genre').all()
+    if request.user.is_authenticated and request.GET.get('tab') == 'likes':
+        liked_ids = Like.objects.filter(user=request.user).values_list('track_id', flat=True)
+        tracks = Track.objects.filter(id__in=liked_ids).select_related('artist', 'album').prefetch_related('genre')
+    else:
+        tracks = Track.objects.select_related('artist', 'album').prefetch_related('genre').all()
+    
     return render(request, 'music/track_list.html', {'tracks': tracks})
 
 
@@ -88,10 +93,15 @@ def track_dislike(request, track_id):
         return JsonResponse({'status': 'disliked'})
 
 def random_track_api(request):
-    tracks = Track.objects.filter(audio_file__isnull=False)
-    if request.user.is_authenticated:
-        tracks = tracks.exclude(dislike__user=request.user)
-    track = tracks.order_by('?').first()
+    track_id = request.GET.get('track_id')
+    if track_id:
+        track = get_object_or_404(Track, pk=track_id, audio_file__isnull=False)
+    else:
+        tracks = Track.objects.filter(audio_file__isnull=False)
+        if request.user.is_authenticated:
+            tracks = tracks.exclude(dislike__user=request.user)
+        track = tracks.order_by('?').first()
+    
     if track:
         is_liked = Like.objects.filter(user=request.user, track=track).exists() if request.user.is_authenticated else False
         is_disliked = Dislike.objects.filter(user=request.user, track=track).exists() if request.user.is_authenticated else False

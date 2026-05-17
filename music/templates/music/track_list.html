@@ -30,9 +30,9 @@
     <div class="col-md-8">
         <div class="card-custom-right p-4">
             <div class="d-flex gap-2 mb-3">
-                <button class="tab-btn active" onclick="currentMode='likes'; this.classList.add('active'); this.nextElementSibling.classList.remove('active'); this.nextElementSibling.nextElementSibling.classList.remove('active');">Likes</button>
-                <button class="tab-btn" onclick="currentMode='all'; this.classList.add('active'); this.previousElementSibling.classList.remove('active'); this.nextElementSibling.classList.remove('active');">Playlists</button>
-                <button class="tab-btn" onclick="currentMode='all'; this.classList.add('active'); this.previousElementSibling.classList.remove('active'); this.previousElementSibling.previousElementSibling.classList.remove('active');">Albums</button>
+                <button class="tab-btn {% if request.GET.tab == 'likes' or not request.GET.tab %}active{% endif %}" onclick="window.location.href='?tab=likes'">Likes</button>
+                <button class="tab-btn {% if request.GET.tab == 'playlists' %}active{% endif %}" onclick="window.location.href='?tab=playlists'">Playlists</button>
+                <button class="tab-btn {% if request.GET.tab == 'albums' %}active{% endif %}" onclick="window.location.href='?tab=albums'">Albums</button>
             </div>
             <hr style="border-color: #D9D9D9; opacity: 1;">
             

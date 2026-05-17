@@ -225,7 +225,17 @@
             width: 520px;
         }
         .disc-back:active { cursor: grabbing; }
-        .disc-front { z-index: 3; width: 160px; bottom: 75px; pointer-events: auto; }
+        .disc-front {
+            z-index: 3;
+            width: 160px;
+            bottom: 75px;
+            pointer-events: auto;
+            backdrop-filter: blur(5px) brightness(1.1);
+            -webkit-backdrop-filter: blur(5px) brightness(1.1);
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            backdrop-filter: blur(4px) contrast(1.1) saturate(1.2);
+        }
         .disc-rect {
             position: absolute;
             left: 80px;
@@ -374,7 +384,7 @@
         <div class="disc-cover-spin playing">
             <img src="{% static 'player/диск.png' %}" alt="cover">
         </div>
-        <img src="{% static 'player/ПЕРЕДНЯЯ_ЧАСТЬ_ДИСКА.svg' %}" class="disc-layer disc-front" alt="">
+        <img src="{% static 'player/test_pause.svg' %}" class="disc-layer disc-front" alt="">
         <img src="{% static 'player/задняя_часть_диска_2.svg' %}" class="disc-rect" alt="">
         
         <img src="{% static 'player/NEXT_SONG_WHITE_VER.svg' %}" class="disc-btn disc-btn-next" alt="Next">
@@ -616,20 +626,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 audio.paused ? audio.play() : audio.pause();
             } else {
                 currentTrackRow = this;
-                audio.src = audioUrl;
-                audio.play();
                 var titleDiv = this.querySelector('div[style*="flex: 1"] div[style*="color: white"]');
-                if (titleDiv && nowPlaying) {
-                    nowPlaying.textContent = titleDiv.textContent.trim();
-                    nowPlaying.classList.remove('placeholder-text');
-                    nowPlaying.classList.add('placeholder-text-active');
-                }
-                var infoLink = this.querySelector('.track-info-icon');
-                if (infoLink && discInfoLink) discInfoLink.href = infoLink.href;
                 var trackUrl = this.querySelector('.track-info-icon');
+                var id = null;
                 if (trackUrl) {
-                    var id = trackUrl.href.split('/track/')[1]?.split('/')[0];
+                    id = trackUrl.href.split('/track/')[1]?.split('/')[0];
                     if (id) currentTrackId = id;
+                }
+                // Используем API для получения полных данных о треке
+                if (id) {
+                    fetch('/random-api/?track_id=' + id)
+                        .then(function(r) { return r.json(); })
+                        .then(function(data) {
+                            playTrackFromData(data);
+                        });
+                } else {
+                    audio.src = audioUrl;
+                    audio.play();
+                    if (titleDiv && nowPlaying) {
+                        nowPlaying.textContent = titleDiv.textContent.trim();
+                        nowPlaying.classList.remove('placeholder-text');
+                        nowPlaying.classList.add('placeholder-text-active');
+                    }
                 }
                 localStorage.setItem('currentTrack', audioUrl);
             }
