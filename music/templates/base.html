@@ -331,6 +331,7 @@
             
             {% if request.user.is_authenticated %}
                 <a href="{% url 'logout' %}" style="display: block; color: #D9D9D9; text-decoration: none; padding: 10px; border: 1px solid #D9D9D9; border-radius: 9px; margin-bottom: 10px;">Log Out</a>
+                <a href="{% url 'my_score' %}" style="display: block; color: #D9D9D9; text-decoration: none; padding: 10px; border: 1px solid #D9D9D9; border-radius: 9px; margin-bottom: 10px;">My score</a>
             {% else %}
                 <a href="{% url 'login' %}" style="display: block; color: #D9D9D9; text-decoration: none; padding: 10px; border: 1px solid #D9D9D9; border-radius: 9px; margin-bottom: 10px;">Log In</a>
                 <a href="{% url 'register' %}" style="display: block; color: #D9D9D9; text-decoration: none; padding: 10px; border: 1px solid #D9D9D9; border-radius: 9px;">Sign Up</a>
@@ -357,7 +358,9 @@
                     <img src="{% static 'icons/ЧАТЫ.svg' %}" alt="Чаты">
                 </span>
             </a>
-            <span class="nav-icon" data-tab="settings"><img src="{% static 'icons/НАСТРОЙКИ.svg' %}" alt="Настройки"></span>
+            <span class="nav-icon" data-tab="settings" onclick="document.getElementById('settingsModal').style.display='flex'">
+                <img src="{% static 'icons/НАСТРОЙКИ.svg' %}" alt="Настройки">
+            </span>
         </div>
     </nav>
 
@@ -387,9 +390,9 @@
         <img src="{% static 'player/test_pause.svg' %}" class="disc-layer disc-front" alt="">
         <img src="{% static 'player/задняя_часть_диска_2.svg' %}" class="disc-rect" alt="">
         
-        <img src="{% static 'player/NEXT_SONG_WHITE_VER.svg' %}" class="disc-btn disc-btn-next" alt="Next">
-        <img src="{% static 'player/PREV_SONG_WHITE_VER.svg' %}" class="disc-btn disc-btn-prev" alt="Prev">
-        <img src="{% static 'player/ПАУЗА.svg' %}" class="disc-btn disc-btn-pause" alt="Pause">
+        <img src="{% static 'player/PREV_SONG_WHITE_VER.svg' %}" class="disc-btn disc-btn-prev" id="discPrevBtn" alt="Prev">
+        <img src="{% static 'player/NEXT_SONG_WHITE_VER.svg' %}" class="disc-btn disc-btn-next" id="discNextBtn" alt="Next">
+        <img src="{% static 'player/PLAY_pause.svg' %}" class="disc-btn disc-btn-pause" id="discPauseImg" alt="Play">
         
         <!-- Лайк -->
         <a href="#" id="discLikeLink">
@@ -482,8 +485,109 @@ var wrapper = document.querySelector('.disc-wrapper');
 })();
 
 // ============================================================
-// 3. ПЛЕЕР, ЛАЙКИ, ДИЗЛАЙКИ
+// НОВАЯ СИСТЕМА СОХРАНЕНИЯ И ВОССТАНОВЛЕНИЯ
 // ============================================================
+
+
+
+// Функция, которая собирает и сохраняет ВСЁ состояние плеера
+function saveFullPlayerState() {
+    if (!audio || !audio.src) return;
+
+    var state = {
+        audioUrl: audio.src,            // Ссылка на трек
+        currentTime: audio.currentTime, // Текущее время в секундах
+        isPlaying: !audio.paused,       // true = играет, false = пауза
+        title: nowPlaying ? nowPlaying.textContent : '',
+        coverUrl: null,                 // Обложка (пока null, но будем обновлять)
+        isLiked: false,                 // Лайк (пока null, но будем обновлять)
+        isDisliked: false,              // Дизлайк (пока null, но будем обновлять)
+        trackId: currentTrackId         // ID текущего трека
+    };
+
+    // Получаем текущую обложку с диска
+    var coverImg = document.querySelector('.disc-cover-spin img');
+    if (coverImg && coverImg.src) {
+        state.coverUrl = coverImg.src;
+    }
+
+    // Получаем статус лайка/дизлайка по иконкам
+    if (discLikeImg && discLikeImg.src.includes('HEART_FULL')) {
+        state.isLiked = true;
+    }
+    if (discDislikeImg && discDislikeImg.src.includes('DISLIKE_PRESSED')) {
+        state.isDisliked = true;
+    }
+
+    localStorage.setItem('collipsePlayerState', JSON.stringify(state));
+}
+
+// Функция восстановления состояния плеера
+function restorePlayerState() {
+    var savedState = localStorage.getItem('collipsePlayerState');
+    if (!savedState) return;
+
+    try {
+        var state = JSON.parse(savedState);
+        
+        // 1. Восстанавливаем трек, только если его ещё нет
+        var currentFileName = audio.src.split('/').pop(); // Берем только "песня.mp3"
+        var savedFileName = state.audioUrl.split('/').pop(); // Берем только "песня.mp3"
+        if (!audio.src || currentFileName !== savedFileName) {
+            audio.src = state.audioUrl;
+        }
+
+        // 2. Восстанавливаем позицию
+        if (state.currentTime) {
+            audio.currentTime = state.currentTime;
+        }
+
+        // 3. Восстанавливаем название
+        if (state.title && nowPlaying) {
+            nowPlaying.textContent = state.title;
+            nowPlaying.classList.remove('placeholder-text');
+            nowPlaying.classList.add('placeholder-text-active');
+        }
+
+        // 4. Восстанавливаем обложку
+        if (state.coverUrl) {
+            var coverImg = document.querySelector('.disc-cover-spin img');
+            if (coverImg) coverImg.src = state.coverUrl;
+        }
+
+        // 5. Восстанавливаем иконки лайка/дизлайка
+        if (state.isLiked && discLikeImg) {
+            discLikeImg.src = discLikeImg.src.replace('HEART_EMPTY', 'HEART_FULL');
+        }
+        if (state.isDisliked && discDislikeImg) {
+            discDislikeImg.src = discDislikeImg.src.replace('HEART_BROKEN.svg', 'DISLIKE_PRESSED.svg');
+        }
+
+        // 6. Восстанавливаем ID трека
+        if (state.trackId) {
+            currentTrackId = state.trackId;
+        }
+        
+        if (currentTrackId && discInfoLink) {
+            discInfoLink.href = '/track/' + currentTrackId + '/';
+            if (discLikeLink) discLikeLink.href = '/track/' + currentTrackId + '/like/';
+            if (discDislikeLink) discDislikeLink.href = '/track/' + currentTrackId + '/dislike/';
+        }
+
+        // 7. Если трек должен играть — запускаем, иначе НЕ трогаем
+        if (state.isPlaying) {
+            audio.play().catch(function() {});
+        } else {
+            audio.pause(); // Явно ставим на паузу, чтобы не "заорал"
+        }
+
+    } catch (e) {
+        // Если JSON сломан — просто игнорируем
+        console.log('Could not restore player state');
+    }
+}
+
+
 var audio = document.getElementById('audioPlayer');
 var nowPlaying = document.getElementById('nowPlaying');
 var discInfoLink = document.getElementById('discInfoLink');
@@ -491,7 +595,7 @@ var discLikeLink = document.getElementById('discLikeLink');
 var discLikeImg = document.getElementById('discLikeImg');
 var discDislikeLink = document.getElementById('discDislikeLink');
 var discDislikeImg = document.getElementById('discDislikeImg');
-var currentMode = 'all'; // 'all' или 'likes'
+var currentMode = 'all';
 var currentTrackId = null;
 var currentTrackRow = null;
 
@@ -499,27 +603,6 @@ function getCSRFToken() {
     var cookie = document.cookie.split('; ').find(function(row) { return row.startsWith('csrftoken='); });
     return cookie ? cookie.split('=')[1] : '';
 }
-
-// Восстановление трека
-(function() {
-    var savedTrack = localStorage.getItem('currentTrack');
-    var savedTime = localStorage.getItem('currentTime');
-    if (savedTrack && audio) {
-        audio.src = savedTrack;
-        audio.currentTime = savedTime ? parseFloat(savedTime) : 0;
-        audio.play().catch(function() {});
-    }
-})();
-
-window.addEventListener('beforeunload', function() {
-    if (audio && !audio.paused && audio.src) {
-        localStorage.setItem('currentTrack', audio.src);
-        localStorage.setItem('currentTime', audio.currentTime);
-    }
-});
-
-// Music RECS
-// Универсальная функция обновления диска
 
 function updateDiscInfo(data) {
     if (data.cover_url) {
@@ -537,13 +620,37 @@ function updateDiscInfo(data) {
     if (discDislikeLink) discDislikeLink.href = '/track/' + data.id + '/dislike/';
 }
 
-// Воспроизведение трека из данных API
-
 function playRandomTrack() {
     currentMode = 'all';
     playNextTrack();
 }
 
+function playNextTrack() {
+    var url = currentMode === 'likes' ? '/liked-tracks-api/' : '/random-api/';
+    fetch(url)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            playTrackFromData(data);
+        });
+}
+
+// ============================================================
+// ПРИВЯЗКА К СОБЫТИЯМ
+// ============================================================
+
+// Сохраняем состояние перед уходом со страницы
+window.addEventListener('beforeunload', function() {
+    saveFullPlayerState();
+});
+
+// Восстанавливаем состояние при загрузке (сразу после объявления переменных)
+restorePlayerState();
+
+// ============================================================
+// ОБНОВЛЁННАЯ ФУНКЦИЯ ВОСПРОИЗВЕДЕНИЯ
+// ============================================================
+
+// Теперь она не только запускает трек, но и сохраняет его
 function playTrackFromData(data) {
     if (!data.audio_url) return;
     audio.src = data.audio_url;
@@ -555,24 +662,8 @@ function playTrackFromData(data) {
         nowPlaying.classList.add('placeholder-text-active');
     }
     updateDiscInfo(data);
-}
-
-// Music RECS (или следующий трек)
-function playNextTrack() {
-    var url = currentMode === 'likes' ? '/liked-tracks-api/' : '/random-api/';
-    fetch(url)
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            playTrackFromData(data);
-        });
-}
-
-// Обработчик окончания трека — всегда вызывает playNextTrack
-if (audio) {
-    audio.addEventListener('ended', function() {
-        currentTrackRow = null;
-        playNextTrack();
-    });
+    // Сразу сохраняем новое состояние
+    saveFullPlayerState();
 }
 
 // Лайк
@@ -651,6 +742,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 localStorage.setItem('currentTrack', audioUrl);
             }
+            saveFullPlayerState();
         });
     });
     if (audio) {
@@ -664,6 +756,62 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+var discPauseBtn = document.getElementById('discPauseBtn');
+if (discPauseBtn) {
+    discPauseBtn.addEventListener('click', function() {
+        if (audio) {
+            audio.paused ? audio.play() : audio.pause();
+        }
+    });
+}
+
+var discPrevBtn = document.getElementById('discPrevBtn');
+var discNextBtn = document.getElementById('discNextBtn');
+
+if (discPrevBtn) {
+    discPrevBtn.addEventListener('click', function() {
+        // Перезапустить текущий трек или переключить на предыдущий
+        if (audio && audio.currentTime > 3) {
+            audio.currentTime = 0;
+        } else {
+            playNextTrack(); // пока что просто следующий
+        }
+    });
+}
+
+if (discNextBtn) {
+    discNextBtn.addEventListener('click', function() {
+        playNextTrack();
+    });
+}
+
+var discPauseImg = document.getElementById('discPauseImg');
+
+function updatePauseIcon() {
+    if (!discPauseImg || !audio) return;
+    if (audio.paused) {
+        discPauseImg.src = discPauseImg.src.replace(/%D0%9F%D0%90%D0%A3%D0%97%D0%90\.svg/, 'PLAY_pause.svg');
+    } else {
+        discPauseImg.src = discPauseImg.src.replace(/PLAY_pause\.svg/, '%D0%9F%D0%90%D0%A3%D0%97%D0%90.svg');
+    }
+}
+
+if (discPauseImg) {
+    discPauseImg.addEventListener('click', function() {
+        if (audio) {
+            audio.paused ? audio.play() : audio.pause();
+            updatePauseIcon();
+        }
+    });
+}
+
+// Синхронизировать иконку при запуске трека из любого места
+if (audio) {
+    audio.addEventListener('play', updatePauseIcon);
+    audio.addEventListener('pause', updatePauseIcon);
+}
+
 </script>
 
 </body>

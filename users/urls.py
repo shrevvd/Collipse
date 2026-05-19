@@ -12,4 +12,5 @@ urlpatterns = [
     path('chat/<str:username>/', views.chat_view, name='chat_view'),
     path('chats/', views.chat_list, name='chat_list'),
     path('search-users/', views.search_users, name='search_users'),
+    path('my-score/', views.my_score, name='my_score'),
 ]

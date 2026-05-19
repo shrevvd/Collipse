@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <a href="{% url 'track_list' %}" style="flex-shrink: 0;">
+                <img src="{% static 'icons/НАЗАД.svg' %}" width="24" height="24" style="filter: brightness(0) invert(0.7);">
+            </a>
+            <h3 style="color: #D9D9D9; font-weight: 700;">My Score</h3>
+        </div>
+        
+        <div class="card-custom-right p-4" style="background: #2A282C; margin-bottom: 20px;">
+            <h5 style="color: #D9D9D9; font-weight: 600; margin-bottom: 15px;">Genres</h5>
+            {% for gs in genre_scores %}
+                {% if gs.score > 0 %}
+                <div class="d-flex justify-content-between" style="color: #aaa; padding: 8px 0; border-bottom: 1px solid #333;">
+                    <span>{{ gs.genre.name }}</span>
+                    <span style="color: #7B2FF7;">{{ gs.score }}</span>
+                </div>
+                {% else %}
+                <div class="d-flex justify-content-between" style="color: #aaa; padding: 8px 0; border-bottom: 1px solid #333;">
+                    <span>{{ gs.genre.name }}</span>
+                    <span style="color: #ff4444;">{{ gs.score }}</span>
+                </div>
+                {% endif %}
+            {% empty %}
+            <p style="color: #79787A;">No scores yet</p>
+            {% endfor %}
+        </div>
+        
+        <div class="card-custom-right p-4" style="background: #2A282C;">
+            <h5 style="color: #D9D9D9; font-weight: 600; margin-bottom: 15px;">Artists</h5>
+            {% for ars in artist_scores %}
+                {% if ars.score > 0 %}
+                <div class="d-flex justify-content-between" style="color: #aaa; padding: 8px 0; border-bottom: 1px solid #333;">
+                    <span>{{ ars.artist.name }}</span>
+                    <span style="color: #7B2FF7;">{{ ars.score }}</span>
+                </div>
+                {% else %}
+                <div class="d-flex justify-content-between" style="color: #aaa; padding: 8px 0; border-bottom: 1px solid #333;">
+                    <span>{{ ars.artist.name }}</span>
+                    <span style="color: #ff4444;">{{ ars.score }}</span>
+                </div>
+                {% endif %}
+            {% empty %}
+            <p style="color: #79787A;">No scores yet</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

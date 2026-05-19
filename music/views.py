@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Count, Q
 from django.http import JsonResponse
-from .models import Track, Artist, Album, Genre, Like, Dislike, UserGenreScore, User
+from .models import Track, Artist, Album, Genre, Like, Dislike, UserGenreScore, User, UserArtistScore
 
 
 def track_list(request):
@@ -55,41 +55,57 @@ def track_like(request, track_id):
         return JsonResponse({'status': 'error', 'message': 'Login required'}, status=401)
     
     track = get_object_or_404(Track, pk=track_id)
-    
     existing_like = Like.objects.filter(user=request.user, track=track)
     
     if existing_like.exists():
         existing_like.delete()
-        # уменьшить score для жанров
+        for genre in track.genre.all():
+            user_score, _ = UserGenreScore.objects.get_or_create(user=request.user, genre=genre)
+            user_score.score -= 2
+            user_score.save()
+        artist_score, _ = UserArtistScore.objects.get_or_create(user=request.user, artist=track.artist)
+        artist_score.score -= 1
+        artist_score.save()
         return JsonResponse({'status': 'unliked'})
     else:
         Dislike.objects.filter(user=request.user, track=track).delete()
         Like.objects.create(user=request.user, track=track)
-        # увеличить score для жанров
+        for genre in track.genre.all():
+            user_score, _ = UserGenreScore.objects.get_or_create(user=request.user, genre=genre)
+            user_score.score += 2
+            user_score.save()
+        artist_score, _ = UserArtistScore.objects.get_or_create(user=request.user, artist=track.artist)
+        artist_score.score += 1
+        artist_score.save()
         return JsonResponse({'status': 'liked'})
     
 def track_dislike(request, track_id):
     if not request.user.is_authenticated:
-        return JsonResponse({'status': 'error', 'message': 'Login reqired'}, status=401)
+        return JsonResponse({'status': 'error', 'message': 'Login required'}, status=401)
     
     track = get_object_or_404(Track, pk=track_id)
-    
     existing_dislike = Dislike.objects.filter(user=request.user, track=track)
     
     if existing_dislike.exists():
         existing_dislike.delete()
         for genre in track.genre.all():
-            user_score, created = UserGenreScore.objects.get_or_create(user=request.user, genre=genre)
-            user_score.score += 1
+            user_score, _ = UserGenreScore.objects.get_or_create(user=request.user, genre=genre)
+            user_score.score += 2
             user_score.save()
+        artist_score, _ = UserArtistScore.objects.get_or_create(user=request.user, artist=track.artist)
+        artist_score.score += 1
+        artist_score.save()
         return JsonResponse({'status': 'undisliked'})
     else:
         Like.objects.filter(user=request.user, track=track).delete()
         Dislike.objects.create(user=request.user, track=track)
         for genre in track.genre.all():
-            user_score, created = UserGenreScore.objects.get_or_create(user=request.user, genre=genre)
-            user_score.score -= 1
+            user_score, _ = UserGenreScore.objects.get_or_create(user=request.user, genre=genre)
+            user_score.score -= 2
             user_score.save()
+        artist_score, _ = UserArtistScore.objects.get_or_create(user=request.user, artist=track.artist)
+        artist_score.score -= 1
+        artist_score.save()
         return JsonResponse({'status': 'disliked'})
 
 def random_track_api(request):

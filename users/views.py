@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from .forms import RegisterForm
 from .models import Profile, Friend, Message
+from music.models import UserGenreScore, UserArtistScore
 from django.db import models
 from django.http import JsonResponse
 
@@ -141,3 +142,12 @@ def search_users(request):
             'avatar': avatar,
         })
     return JsonResponse(results, safe=False)
+
+@login_required
+def my_score(request):
+    genre_scores = UserGenreScore.objects.filter(user=request.user).exclude(score=0).order_by('-score')
+    artist_scores = UserArtistScore.objects.filter(user=request.user).exclude(score=0).order_by('-score')
+    return render (request, 'users/my_score.html', {
+        'genre_scores': genre_scores,
+        'artist_scores': artist_scores
+    })
