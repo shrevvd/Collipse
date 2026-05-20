@@ -530,32 +530,39 @@ function restorePlayerState() {
     try {
         var state = JSON.parse(savedState);
         
-        // 1. Восстанавливаем трек, только если его ещё нет
-        var currentFileName = audio.src.split('/').pop(); // Берем только "песня.mp3"
-        var savedFileName = state.audioUrl.split('/').pop(); // Берем только "песня.mp3"
+        // 1. Восстанавливаем трек
+        var currentFileName = audio.src.split('/').pop();
+        var savedFileName = state.audioUrl.split('/').pop();
         if (!audio.src || currentFileName !== savedFileName) {
             audio.src = state.audioUrl;
         }
 
-        // 2. Восстанавливаем позицию
-        if (state.currentTime) {
-            audio.currentTime = state.currentTime;
+        // 2. Восстанавливаем позицию (до запуска!)
+        if (state.currentTime && state.currentTime > 1) {
+            audio.addEventListener('loadedmetadata', function() {
+                audio.currentTime = state.currentTime;
+                if (state.isPlaying) {
+                    audio.play().catch(function() {});
+                }
+            }, { once: true });
+        } else if (state.isPlaying) {
+            audio.play().catch(function() {});
         }
 
-        // 3. Восстанавливаем название
+        // 3. Название
         if (state.title && nowPlaying) {
             nowPlaying.textContent = state.title;
             nowPlaying.classList.remove('placeholder-text');
             nowPlaying.classList.add('placeholder-text-active');
         }
 
-        // 4. Восстанавливаем обложку
+        // 4. Обложка
         if (state.coverUrl) {
             var coverImg = document.querySelector('.disc-cover-spin img');
             if (coverImg) coverImg.src = state.coverUrl;
         }
 
-        // 5. Восстанавливаем иконки лайка/дизлайка
+        // 5. Иконки лайка/дизлайка
         if (state.isLiked && discLikeImg) {
             discLikeImg.src = discLikeImg.src.replace('HEART_EMPTY', 'HEART_FULL');
         }
@@ -563,26 +570,17 @@ function restorePlayerState() {
             discDislikeImg.src = discDislikeImg.src.replace('HEART_BROKEN.svg', 'DISLIKE_PRESSED.svg');
         }
 
-        // 6. Восстанавливаем ID трека
+        // 6. ID трека и ссылки на диске
         if (state.trackId) {
             currentTrackId = state.trackId;
         }
-        
         if (currentTrackId && discInfoLink) {
             discInfoLink.href = '/track/' + currentTrackId + '/';
             if (discLikeLink) discLikeLink.href = '/track/' + currentTrackId + '/like/';
             if (discDislikeLink) discDislikeLink.href = '/track/' + currentTrackId + '/dislike/';
         }
 
-        // 7. Если трек должен играть — запускаем, иначе НЕ трогаем
-        if (state.isPlaying) {
-            audio.play().catch(function() {});
-        } else {
-            audio.pause(); // Явно ставим на паузу, чтобы не "заорал"
-        }
-
     } catch (e) {
-        // Если JSON сломан — просто игнорируем
         console.log('Could not restore player state');
     }
 }
@@ -699,7 +697,9 @@ if (discDislikeLink) {
         .then(function(data) {
             if (data.status === 'disliked') {
                 discDislikeImg.src = discDislikeImg.src.replace('HEART_BROKEN.svg', 'DISLIKE_PRESSED.svg');
-                playRandomTrack();
+                discLikeImg.src = discLikeImg.src.replace('HEART_FULL', 'HEART_EMPTY');
+                currentMode = 'all';
+                playNextTrack();
             } else if (data.status === 'undisliked') {
                 discDislikeImg.src = discDislikeImg.src.replace('DISLIKE_PRESSED.svg', 'HEART_BROKEN.svg');
             }
@@ -745,16 +745,6 @@ document.addEventListener('DOMContentLoaded', function() {
             saveFullPlayerState();
         });
     });
-    if (audio) {
-        audio.addEventListener('ended', function() {
-            currentTrackRow = null;
-            if (nowPlaying) {
-                nowPlaying.textContent = 'Choose a track!';
-                nowPlaying.classList.remove('placeholder-text-active');
-                nowPlaying.classList.add('placeholder-text');
-            }
-        });
-    }
 });
 
 var discPauseBtn = document.getElementById('discPauseBtn');

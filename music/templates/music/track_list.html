@@ -88,12 +88,9 @@
     var musicIcon = document.querySelector('.nav-icon[data-tab="music"]');
     if (musicIcon) musicIcon.classList.add('active');
     
-    // Ждём загрузки base.html-скрипта
-    document.addEventListener('DOMContentLoaded', function() {
-        if (typeof indicator !== 'undefined' && musicIcon) {
-            indicator.style.left = (musicIcon.offsetLeft + musicIcon.offsetWidth/2 - 27) + 'px';
-        }
-    });
+    if (typeof indicator !== 'undefined' && musicIcon) {
+        indicator.style.left = (musicIcon.offsetLeft + musicIcon.offsetWidth/2 - 27) + 'px';
+    }
 </script>
 
 <script>
