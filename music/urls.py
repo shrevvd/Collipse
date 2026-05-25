@@ -14,4 +14,9 @@ urlpatterns = [
     path('random-chat/', views.random_chat, name='random_chat'),
     path('search-tracks/', views.search_tracks, name='search_tracks'),
     path('liked-tracks-api/', views.liked_tracks_api, name='liked_tracks_api'),
+    path('recommend-genre/', views.recommend_by_genre, name='recommend_genre'),
+    path('recommend-artist/', views.recommend_by_artist, name='recommend_artist'),
+    path('upload/', views.upload_track, name='upload_track'),
+    path('api/artists/', views.api_artists, name='api_artists'),
+    path('api/albums/', views.api_albums, name='api_albums'),
 ]

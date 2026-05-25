@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6 offset-md-3">
+        <div class="card-custom-right p-4" style="background: #2A282C;">
+            <h3 style="color: #D9D9D9; font-weight: 700; margin-bottom: 20px;">Upload a Track</h3>
+            
+            {% if error %}
+            <p style="color: #ff6b6b;">{{ error }}</p>
+            {% endif %}
+            
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <!-- Название -->
+                <label style="color: #aaa; font-size: 14px;">Title</label>
+                <input type="text" name="title" class="search-box mb-3" placeholder="Song title" required style="width: 100%; padding: 10px 15px; border-radius: 9px;">
+                
+                <!-- Исполнитель с подсказками -->
+                <label style="color: #aaa; font-size: 14px;">Artist</label>
+                <input type="text" name="artist" id="artistInput" class="search-box mb-3" placeholder="Artist name" required autocomplete="off" style="width: 100%; padding: 10px 15px; border-radius: 9px;" oninput="fetchArtists()">
+                <datalist id="artistList"></datalist>
+                
+                <!-- Альбом с подсказками -->
+                <label style="color: #aaa; font-size: 14px;">Album (optional)</label>
+                <input type="text" name="album" id="albumInput" class="search-box mb-3" placeholder="Album name" autocomplete="off" style="width: 100%; padding: 10px 15px; border-radius: 9px;" oninput="fetchAlbums()">
+                <datalist id="albumList"></datalist>
+                
+                <!-- Аудиофайл -->
+                <label style="color: #aaa; font-size: 14px;">Audio file (MP3, 15 sec – 20 min)</label>
+                <input type="file" name="audio_file" accept="audio/mpeg" required class="mb-3" style="color: #aaa; width: 100%;">
+                
+                <!-- Обложка -->
+                <label style="color: #aaa; font-size: 14px;">Cover (optional)</label>
+                <input type="file" name="cover" accept="image/*" class="mb-3" style="color: #aaa; width: 100%;">
+                
+                <button type="submit" style="width: 100%; background: #251C2D; color: #D9D9D9; border: 1px solid #D9D9D9; border-radius: 9px; padding: 10px; font-size: 16px; cursor: pointer;">Upload</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function fetchArtists() {
+    var query = document.getElementById('artistInput').value;
+    if (query.length < 1) return;
+    fetch('/api/artists/?q=' + encodeURIComponent(query))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var list = document.getElementById('artistList');
+            list.innerHTML = '';
+            data.forEach(function(a) {
+                var option = document.createElement('option');
+                option.value = a.name;
+                list.appendChild(option);
+            });
+        });
+}
+
+function fetchAlbums() {
+    var query = document.getElementById('albumInput').value;
+    if (query.length < 1) return;
+    fetch('/api/albums/?q=' + encodeURIComponent(query))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var list = document.getElementById('albumList');
+            list.innerHTML = '';
+            data.forEach(function(a) {
+                var option = document.createElement('option');
+                option.value = a.title;
+                list.appendChild(option);
+            });
+        });
+}
+</script>
+{% endblock %}

@@ -273,9 +273,15 @@
         }
 
         .disc-btn-info {
-            top: -50px;
+            top: -80px;
             left: 370px;
             width: 40px;
+        }
+
+        .disc-btn-queue {
+            top: -12px;
+            left: 373px;
+            width: 35px;
         }
 
         .disc-btn-dislike {
@@ -401,9 +407,13 @@
         
         <!-- Инфо -->
         <a href="#" id="discInfoLink">
-            <img src="{% static 'player/ИНФО_ДЛЯ_ТРЕКА.svg' %}" class="disc-btn disc-btn-info" alt="Info">
+            <img src="{% static 'player/ИНФО_ТОНКОЕ_ДИСК2.svg' %}" class="disc-btn disc-btn-info" alt="Info">
         </a>
         
+        <a href="#" id="discQueueLink">
+            <img src="{% static 'player/ОЧЕРЕДЬ.svg' %}" class="disc-btn disc-btn-queue" alt="Queue">
+        </a>
+
         <!-- Дизлайк -->
         <a href="#" id="discDislikeLink">
             <img src="{% static 'player/HEART_BROKEN.svg' %}" class="disc-btn disc-btn-dislike" id="discDislikeImg" alt="Dislike">
@@ -525,63 +535,84 @@ function saveFullPlayerState() {
 // Функция восстановления состояния плеера
 function restorePlayerState() {
     var savedState = localStorage.getItem('collipsePlayerState');
-    if (!savedState) return;
+    if (!savedState || !audio) {
+        return;
+    }
 
     try {
         var state = JSON.parse(savedState);
-        
-        // 1. Восстанавливаем трек
-        var currentFileName = audio.src.split('/').pop();
-        var savedFileName = state.audioUrl.split('/').pop();
-        if (!audio.src || currentFileName !== savedFileName) {
-            audio.src = state.audioUrl;
-        }
-
-        // 2. Восстанавливаем позицию (до запуска!)
-        if (state.currentTime && state.currentTime > 1) {
-            audio.addEventListener('loadedmetadata', function() {
-                audio.currentTime = state.currentTime;
-                if (state.isPlaying) {
-                    audio.play().catch(function() {});
-                }
-            }, { once: true });
-        } else if (state.isPlaying) {
-            audio.play().catch(function() {});
-        }
-
-        // 3. Название
+        // ---------- UI ----------
         if (state.title && nowPlaying) {
             nowPlaying.textContent = state.title;
             nowPlaying.classList.remove('placeholder-text');
             nowPlaying.classList.add('placeholder-text-active');
         }
-
-        // 4. Обложка
         if (state.coverUrl) {
             var coverImg = document.querySelector('.disc-cover-spin img');
-            if (coverImg) coverImg.src = state.coverUrl;
+            if (coverImg) {
+                coverImg.src = state.coverUrl;
+            }
         }
-
-        // 5. Иконки лайка/дизлайка
-        if (state.isLiked && discLikeImg) {
-            discLikeImg.src = discLikeImg.src.replace('HEART_EMPTY', 'HEART_FULL');
-        }
-        if (state.isDisliked && discDislikeImg) {
-            discDislikeImg.src = discDislikeImg.src.replace('HEART_BROKEN.svg', 'DISLIKE_PRESSED.svg');
-        }
-
-        // 6. ID трека и ссылки на диске
         if (state.trackId) {
             currentTrackId = state.trackId;
+            if (discInfoLink) {
+                discInfoLink.href = '/track/' + currentTrackId + '/';
+            }
+            if (discLikeLink) {
+                discLikeLink.href = '/track/' + currentTrackId + '/like/';
+            }
+            if (discDislikeLink) {
+                discDislikeLink.href = '/track/' + currentTrackId + '/dislike/';
+            }
         }
-        if (currentTrackId && discInfoLink) {
-            discInfoLink.href = '/track/' + currentTrackId + '/';
-            if (discLikeLink) discLikeLink.href = '/track/' + currentTrackId + '/like/';
-            if (discDislikeLink) discDislikeLink.href = '/track/' + currentTrackId + '/dislike/';
+        if (state.isLiked && discLikeImg) {
+            discLikeImg.src = discLikeImg.src.replace(
+                'HEART_EMPTY',
+                'HEART_FULL'
+            );
         }
+        if (state.isDisliked && discDislikeImg) {
+            discDislikeImg.src = discDislikeImg.src.replace(
+                'HEART_BROKEN.svg',
+                'DISLIKE_PRESSED.svg'
+            );
+        }
+        // ---------- AUDIO ----------
+        if (!state.audioUrl) {
+            return;
+        }
+        audio.src = state.audioUrl;
+        var restored = false;
+        function restorePosition() {
+            if (restored) return;
+            restored = true;
+            var targetTime = Number(state.currentTime) || 0;
+            try {
+                if (targetTime > 0) {
+                    audio.currentTime = targetTime;
+                }
+            } catch (e) {
+                console.log('Seek failed', e);
+            }
+            if (state.isPlaying) {
+                audio.play().catch(function(err) {
+                    console.log('Autoplay blocked', err);
+                });
+            }
+        }
+        audio.addEventListener('loadedmetadata', restorePosition, {
+            once: true
+        });
+        audio.addEventListener('canplay', restorePosition, {
+            once: true
+        });
+        // запасной вариант
+        setTimeout(function() {
+            restorePosition();
+        }, 1000);
 
     } catch (e) {
-        console.log('Could not restore player state');
+        console.error('Restore player failed:', e);
     }
 }
 
@@ -803,6 +834,56 @@ if (audio) {
 }
 
 </script>
+
+<script> //для очереди
+    var queue = [];
+var history = [];
+var discQueueLink = document.getElementById('discQueueLink');
+
+// Показать/скрыть панель очереди
+if (discQueueLink) {
+    discQueueLink.addEventListener('click', function(e) {
+        e.preventDefault();
+        var panel = document.getElementById('queuePanel');
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    });
+}
+
+// Отрисовать очередь в панели
+function renderQueue() {
+    var list = document.getElementById('queueList');
+    if (!list) return;
+    if (queue.length === 0) {
+        list.innerHTML = '<p style="color: #79787A;">Queue is empty</p>';
+        return;
+    }
+    var html = '';
+    for (var i = 0; i < queue.length; i++) {
+        html += '<div style="padding: 6px 0; border-bottom: 1px solid #333; display: flex; justify-content: space-between;">' +
+            '<span>' + (i + 1) + '. ' + queue[i].title + ' — ' + queue[i].artist + '</span>' +
+            '<span style="color: #79787A; cursor: pointer;" onclick="removeFromQueue(' + i + ')">✕</span>' +
+        '</div>';
+    }
+    list.innerHTML = html;
+}
+
+// Удалить трек из очереди
+function removeFromQueue(index) {
+    queue.splice(index, 1);
+    renderQueue();
+}
+
+// Добавить трек в очередь
+function addToQueue(track) {
+    queue.push(track);
+    renderQueue();
+}
+</script>
+
+<div id="queuePanel" style="display: none; position: fixed; bottom: 260px; left: 35%; background: #2A282C; border-radius: 12px; padding: 15px; z-index: 150; width: 300px; max-height: 400px; overflow-y: auto;">
+    <h5 style="color: #D9D9D9; margin-bottom: 10px;">Queue</h5>
+    <div id="queueList" style="color: #aaa; font-size: 13px;">Queue is empty</div>
+</div>
 
 </body>
 </html>

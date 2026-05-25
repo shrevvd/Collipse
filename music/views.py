@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Count, Q
 from django.http import JsonResponse
 from .models import Track, Artist, Album, Genre, Like, Dislike, UserGenreScore, User, UserArtistScore
+from django.contrib.auth.decorators import login_required
 
 
 def track_list(request):
@@ -181,3 +182,83 @@ def liked_tracks_api(request):
             'is_disliked': is_disliked,
         })
     return JsonResponse({'status': 'empty', 'message': 'No liked tracks'})
+
+def recommend_by_genre(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'status': 'error'}, status=401)
+    top_genre = UserGenreScore.objects.filter(user=request.user).order_by('-score').first()
+    if not top_genre:
+        return JsonResponse({'status': 'empty'})
+    track = Track.objects.filter(genre=top_genre.genre, audio_file__isnull=False).exclude(dislike__user=request.user).order_by('?').first()
+    if track:
+        is_liked = Like.objects.filter(user=request.user, track=track).exists()
+        is_disliked = Dislike.objects.filter(user=request.user, track=track).exists()
+        return JsonResponse({
+            'id': track.pk, 'title': track.title, 'artist': track.artist.name,
+            'audio_url': track.audio_file.url, 'cover_url': track.cover.url if track.cover else None,
+            'is_liked': is_liked, 'is_disliked': is_disliked
+        })
+    return JsonResponse({'status': 'empty'})
+
+def recommend_by_artist(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'status': 'error'}, status=401)
+    top_artist = UserArtistScore.objects.filter(user=request.user).order_by('-score').first()
+    if not top_artist:
+        return JsonResponse({'status': 'empty'})
+    track = Track.objects.filter(artist=top_artist.artist, audio_file__isnull=False).exclude(dislike__user=request.user).order_by('?').first()
+    if track:
+        is_liked = Like.objects.filter(user=request.user, track=track).exists()
+        is_disliked = Dislike.objects.filter(user=request.user, track=track).exists()
+        return JsonResponse({
+            'id': track.pk, 'title': track.title, 'artist': track.artist.name,
+            'audio_url': track.audio_file.url, 'cover_url': track.cover.url if track.cover else None,
+            'is_liked': is_liked, 'is_disliked': is_disliked
+        })
+    return JsonResponse({'status': 'empty'})
+
+@login_required
+def upload_track(request):
+    if request.method == 'POST':
+        title = request.POST.get('title', '').strip()
+        artist_name = request.POST.get('artist', '').strip()
+        album_title = request.POST.get('album', '').strip()
+        audio_file = request.FILES.get('audio_file')
+        cover = request.FILES.get('cover')
+        
+        if not title or not artist_name or not audio_file:
+            return render(request, 'music/upload.html', {'error': 'Title, artist and audio file are required'})
+        
+        artist, _ = Artist.objects.get_or_create(name=artist_name)
+        
+        album = None
+        if album_title:
+            album, _ = Album.objects.get_or_create(title=album_title, defaults={'artist': artist})
+        
+        track = Track.objects.create(
+            title=title,
+            artist=artist,
+            album=album,
+            audio_file=audio_file,
+        )
+        if cover:
+            track.cover = cover
+            track.save()
+        
+        return redirect('track_detail', pk=track.pk)
+    
+    return render(request, 'music/upload.html')
+
+def api_artists(request):
+    query = request.GET.get('q', '').strip()
+    if not query:
+        return JsonResponse([], safe=False)
+    artists = Artist.objects.filter(name__icontains=query)[:10]
+    return JsonResponse([{'name': a.name} for a in artists], safe=False)
+
+def api_albums(request):
+    query = request.GET.get('q', '').strip()
+    if not query:
+        return JsonResponse([], safe=False)
+    albums = Album.objects.filter(title__icontains=query)[:10]
+    return JsonResponse([{'title': a.title} for a in albums], safe=False)
