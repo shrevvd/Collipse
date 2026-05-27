@@ -3,6 +3,7 @@ from django.db.models import Count, Q
 from django.http import JsonResponse
 from .models import Track, Artist, Album, Genre, Like, Dislike, UserGenreScore, User, UserArtistScore
 from django.contrib.auth.decorators import login_required
+from random import choice, shuffle
 
 
 def track_list(request):
@@ -262,3 +263,141 @@ def api_albums(request):
         return JsonResponse([], safe=False)
     albums = Album.objects.filter(title__icontains=query)[:10]
     return JsonResponse([{'title': a.title} for a in albums], safe=False)
+
+
+def queue_api(request):
+    exclude_ids = request.GET.get(
+        'exclude',
+        ''
+    )
+
+    exclude_ids = [
+        int(x)
+        for x in exclude_ids.split(',')
+        if x.isdigit()
+    ]
+    
+    mode = request.GET.get('mode', 'recs')
+    current_id = request.GET.get('current')
+    result = []
+
+    # likes
+    if mode == 'likes':
+
+        if not request.user.is_authenticated:
+            return JsonResponse([], safe=False)
+
+        liked_ids = Like.objects.filter(
+            user=request.user
+        ).values_list(
+            'track_id',
+            flat=True
+        )
+
+        tracks_query = Track.objects.filter(
+            id__in=liked_ids,
+            audio_file__isnull=False
+        )
+        
+        if exclude_ids:
+            tracks_query = tracks_query.exclude(
+                pk__in=exclude_ids
+            )
+
+        if current_id:
+            tracks_query = tracks_query.exclude(
+                pk=current_id
+            )
+
+        tracks = list(
+            tracks_query.order_by('?')[:5]
+        )
+
+    # recent
+    elif mode == 'recent':
+
+        tracks_query = Track.objects.filter(
+            audio_file__isnull=False
+        )
+
+        if exclude_ids:
+            tracks_query = tracks_query.exclude(
+                pk__in=exclude_ids
+            )
+
+        if current_id:
+            tracks_query = tracks_query.exclude(
+                pk=current_id
+            )
+
+        tracks = list(
+            tracks_query.order_by('?')[:5]
+        )
+
+    # RECS
+    else:
+        if not request.user.is_authenticated:
+            tracks = list(
+                Track.objects.filter(
+                    audio_file__isnull=False
+                ).order_by('?')[:5]
+            )
+        else:
+            tracks = []
+
+            top_artists = list(
+                UserArtistScore.objects
+                .filter(user=request.user)
+                .order_by('-score')[:10]
+            )
+            top_genres = list(
+                UserGenreScore.objects
+                .filter(user=request.user)
+                .order_by('-score')[:10]
+            )
+            for i in range(5):
+                track = None
+
+                # исполнитель
+                if i % 2 == 0 and top_artists:
+                    artist_score = choice(top_artists)
+                    track = (
+                        Track.objects
+                        .filter(
+                            artist=artist_score.artist,
+                            audio_file__isnull=False
+                        )
+                        .exclude(dislike__user=request.user)
+                        .order_by('?')
+                        .first()
+                    )
+
+                # жанр
+                elif top_genres:
+                    genre_score = choice(top_genres)
+                    track = (
+                        Track.objects
+                        .filter(
+                            genre=genre_score.genre,
+                            audio_file__isnull=False
+                        )
+                        .exclude(dislike__user=request.user)
+                        .order_by('?')
+                        .first()
+                    )
+
+                if track and track.pk not in exclude_ids:
+                    tracks.append(track)
+                    exclude_ids.append(track.pk)
+
+    for track in tracks:
+        result.append({
+            'id': track.pk,
+            'title': track.title,
+            'artist': track.artist.name,
+            'audio_url': track.audio_file.url,
+            'cover_url': track.cover.url if track.cover else None,
+            'is_liked': request.user.is_authenticated and Like.objects.filter(user=request.user, track=track).exists(),
+            'is_disliked': request.user.is_authenticated and Dislike.objects.filter(user=request.user, track=track).exists(),
+        })
+    return JsonResponse(result, safe=False)

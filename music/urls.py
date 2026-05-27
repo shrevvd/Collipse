@@ -19,4 +19,5 @@ urlpatterns = [
     path('upload/', views.upload_track, name='upload_track'),
     path('api/artists/', views.api_artists, name='api_artists'),
     path('api/albums/', views.api_albums, name='api_albums'),
+    path('queue-api/', views.queue_api, name='queue_api'),
 ]

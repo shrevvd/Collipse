@@ -421,8 +421,9 @@
     </div>
 </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
 
 document.querySelector('.nav-icon[data-tab="settings"]').addEventListener('click', function() {
     document.getElementById('settingsModal').style.display = 'flex';
@@ -431,9 +432,7 @@ document.querySelector('.nav-icon[data-tab="settings"]').addEventListener('click
 document.getElementById('settingsModal').addEventListener('click', function(e) {
     if (e.target === this) this.style.display = 'none';
 });
-// ============================================================
-// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ (доступны всем скриптам)
-// ============================================================
+
 var indicator = document.querySelector('.glow-indicator');
 var navIcons = document.querySelectorAll('.nav-icon');
 var disc = document.querySelector('.disc-back');
@@ -498,9 +497,7 @@ var wrapper = document.querySelector('.disc-wrapper');
 // НОВАЯ СИСТЕМА СОХРАНЕНИЯ И ВОССТАНОВЛЕНИЯ
 // ============================================================
 
-
-
-// Функция, которая собирает и сохраняет ВСЁ состояние плеера
+//  собирает и сохраняет ВСЁ состояние плеера
 function saveFullPlayerState() {
     if (!audio || !audio.src) return;
 
@@ -530,6 +527,24 @@ function saveFullPlayerState() {
     }
 
     localStorage.setItem('collipsePlayerState', JSON.stringify(state));
+}
+
+function saveQueueState() {
+
+    localStorage.setItem(
+        'collipseQueue',
+        JSON.stringify(queue)
+    );
+
+    localStorage.setItem(
+        'collipseQueueIndex',
+        queueIndex
+    );
+
+    localStorage.setItem(
+        'collipseMode',
+        currentMode
+    );
 }
 
 // Функция восстановления состояния плеера
@@ -582,6 +597,7 @@ function restorePlayerState() {
             return;
         }
         audio.src = state.audioUrl;
+        audio.load();
         var restored = false;
         function restorePosition() {
             if (restored) return;
@@ -624,7 +640,6 @@ var discLikeLink = document.getElementById('discLikeLink');
 var discLikeImg = document.getElementById('discLikeImg');
 var discDislikeLink = document.getElementById('discDislikeLink');
 var discDislikeImg = document.getElementById('discDislikeImg');
-var currentMode = 'all';
 var currentTrackId = null;
 var currentTrackRow = null;
 
@@ -649,18 +664,97 @@ function updateDiscInfo(data) {
     if (discDislikeLink) discDislikeLink.href = '/track/' + data.id + '/dislike/';
 }
 
-function playRandomTrack() {
-    currentMode = 'all';
-    playNextTrack();
+function loadQueue(mode, currentId = null, append = false) {
+
+    currentMode = mode;
+
+    let url =
+        '/queue-api/?mode=' + mode;
+
+    if (currentId) {
+        url += '&current=' + currentId;
+    }
+
+    if (
+        append &&
+        queue.length > 0
+    ) {
+        url += '&exclude=' +
+            queue.map(function(t) {
+                return t.id;
+            }).join(',');
+    }
+
+    fetch(url)
+        .then(function(r) {
+            return r.json();
+        })
+        .then(function(data) {
+
+            // новая очередь
+            if (!append) {
+                queue = data;
+                queueIndex = 0;
+            }
+
+            // догрузка
+            else {
+                if (data.length > 0) {
+                    queue = queue.concat(data);
+                } else {
+                    // всё закончилось
+                    queueIndex = 0;
+                    shuffleQueue();
+                }
+            }
+            renderQueue();
+            saveQueueState();
+        });
+}
+
+function shuffleQueue() {
+    for (
+        let i = queue.length - 1;
+        i > 0;
+        i--
+    ) {
+        const j =
+            Math.floor(
+                Math.random() * (i + 1)
+            );
+        [queue[i], queue[j]] =
+        [queue[j], queue[i]];
+    }
+    renderQueue();
 }
 
 function playNextTrack() {
-    var url = currentMode === 'likes' ? '/liked-tracks-api/' : '/random-api/';
-    fetch(url)
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            playTrackFromData(data);
-        });
+    if (queue.length === 0) {
+        return;
+    }
+    // заранее догружаем
+    if (
+        queue.length - queueIndex <= 2
+    ) {
+        loadQueue(
+            currentMode,
+            currentTrackId,
+            true
+        );
+    }
+    // конец очереди
+    if (
+        queueIndex >= queue.length
+    ) {
+        queueIndex = 0;
+        shuffleQueue();
+    }
+    playTrackFromData(
+        queue[queueIndex]
+    );
+    queueIndex++;
+    renderQueue();
+    saveQueueState();
 }
 
 // ============================================================
@@ -672,8 +766,7 @@ window.addEventListener('beforeunload', function() {
     saveFullPlayerState();
 });
 
-// Восстанавливаем состояние при загрузке (сразу после объявления переменных)
-restorePlayerState();
+
 
 // ============================================================
 // ОБНОВЛЁННАЯ ФУНКЦИЯ ВОСПРОИЗВЕДЕНИЯ
@@ -760,8 +853,31 @@ document.addEventListener('DOMContentLoaded', function() {
                     fetch('/random-api/?track_id=' + id)
                         .then(function(r) { return r.json(); })
                         .then(function(data) {
+
                             playTrackFromData(data);
-                        });
+
+                                if (currentMode === 'likes') {
+                                    loadQueue(
+                                        'likes',
+                                        data.id
+                                    );
+                                }
+                                else if (
+                                    currentMode === 'recent'
+                                ) {
+                                    loadQueue(
+                                        'recent',
+                                        data.id
+                                    );
+                                }
+                                else {
+                                    loadQueue(
+                                        'recs',
+                                        data.id
+                                    );
+
+                                }
+                            });
                 } else {
                     audio.src = audioUrl;
                     audio.play();
@@ -829,16 +945,94 @@ if (discPauseImg) {
 
 // Синхронизировать иконку при запуске трека из любого места
 if (audio) {
-    audio.addEventListener('play', updatePauseIcon);
-    audio.addEventListener('pause', updatePauseIcon);
+
+    audio.addEventListener('play', function() {
+        updatePauseIcon();
+        saveFullPlayerState();
+    });
+
+    audio.addEventListener('pause', function() {
+        updatePauseIcon();
+        saveFullPlayerState();
+    });
+
+    // сохраняем позицию каждые 2 секунды
+    audio.addEventListener('timeupdate', function() {
+
+        if (!audio.paused) {
+
+            if (
+                !window.lastSave ||
+                Date.now() - window.lastSave > 2000
+            ) {
+
+                window.lastSave = Date.now();
+                saveFullPlayerState();
+
+            }
+        }
+    });
+
+    audio.addEventListener('ended', function() {
+        playNextTrack();
+    });
+
 }
 
-</script>
+document.addEventListener('DOMContentLoaded', function() {
+    restorePlayerState();
+    renderQueue();
+});
 
-<script> //для очереди
-    var queue = [];
+
 var history = [];
-var discQueueLink = document.getElementById('discQueueLink');
+
+// очередь
+var queue = [];
+
+// индекс текущего
+var queueIndex = 0;
+
+// режим
+var currentMode = 'recs';
+
+// восстановление очереди
+try {
+
+    queue = JSON.parse(
+        localStorage.getItem('collipseQueue')
+    ) || [];
+
+    queueIndex = Number(
+        localStorage.getItem('collipseQueueIndex')
+    ) || 0;
+
+    currentMode =
+        localStorage.getItem('collipseMode')
+        || 'recs';
+
+}
+catch(e){
+
+    queue = [];
+    queueIndex = 0;
+    currentMode = 'recs';
+
+}
+
+function shuffleQueue() {
+    for (let i = queue.length - 1; i > 0; i--) {
+        let j = Math.floor(
+            Math.random() * (i + 1)
+        );
+
+        [queue[i], queue[j]] = [
+            queue[j],
+            queue[i]
+        ];
+    }
+    saveQueueState();
+}
 
 // Показать/скрыть панель очереди
 if (discQueueLink) {
@@ -854,16 +1048,35 @@ function renderQueue() {
     var list = document.getElementById('queueList');
     if (!list) return;
     if (queue.length === 0) {
-        list.innerHTML = '<p style="color: #79787A;">Queue is empty</p>';
+        list.innerHTML =
+            '<p style="color:#79787A;">Queue is empty</p>';
         return;
     }
     var html = '';
-    for (var i = 0; i < queue.length; i++) {
-        html += '<div style="padding: 6px 0; border-bottom: 1px solid #333; display: flex; justify-content: space-between;">' +
-            '<span>' + (i + 1) + '. ' + queue[i].title + ' — ' + queue[i].artist + '</span>' +
-            '<span style="color: #79787A; cursor: pointer;" onclick="removeFromQueue(' + i + ')">✕</span>' +
-        '</div>';
-    }
+    queue.forEach(function(track, index) {
+        var active =
+            index === queueIndex - 1;
+        html += `
+            <div
+                style="
+                    padding:10px 12px;
+                    margin-bottom:6px;
+                    border-radius:12px;
+                    ${
+                        active
+                        ? 'background:#443F4B;color:white;'
+                        : 'background:transparent;color:#aaa;'
+                    }
+                "
+            >
+                <div>${track.title}</div>
+                <div style="font-size:11px;opacity:.7;">
+                    ${track.artist}
+                </div>
+            </div>
+        `;
+    });
+
     list.innerHTML = html;
 }
 

@@ -21,7 +21,10 @@
                 <script>
                     var randomUrl = "{% url 'random_track' %}";
                 </script>
-                <img src="{% static 'icons/ПРОИГРЫВАТЕЛЬ.svg' %}" alt="Play" class="play-icon mt-3" onclick="playRandomTrack()">
+                <img src="{% static 'icons/ПРОИГРЫВАТЕЛЬ.svg' %}"
+                alt="Play"
+                class="play-icon mt-3"
+                id="recsButton">
                 <a href="{% url 'upload_track' %}" class="upload-link mt-3" style="display: block; text-align: center;">Upload your track</a>
             </div>
         </div>
@@ -30,8 +33,15 @@
     <div class="col-md-8">
         <div class="card-custom-right p-4">
             <div class="d-flex gap-2 mb-3">
-                <button class="tab-btn {% if request.GET.tab == 'likes' or not request.GET.tab %}active{% endif %}" onclick="window.location.href='?tab=likes'">Likes</button>
-                <button class="tab-btn {% if request.GET.tab == 'recently_added' %}active{% endif %}" onclick="window.location.href='?tab=recently_added'">Recently added</button>
+                <button id="likesTab"
+                class="tab-btn {% if request.GET.tab == 'likes' or not request.GET.tab %}active{% endif %}">
+                    Likes
+                </button>
+
+                <button id="recentTab"
+                class="tab-btn {% if request.GET.tab == 'recently_added' %}active{% endif %}">
+                    Recently added
+                </button>
             </div>
             <hr style="border-color: #D9D9D9; opacity: 1;">
             
@@ -141,5 +151,83 @@ document.addEventListener('click', function(e) {
     }
 });
 </script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    var likesBtn = document.querySelector(
+        'button[onclick*="tab=likes"]'
+    );
+
+    var recentBtn = document.querySelector(
+        'button[onclick*="tab=recently_added"]'
+    );
+
+    if (likesBtn) {
+        likesBtn.addEventListener('dblclick', function(e) {
+            e.preventDefault();
+            loadQueue('likes');
+        });
+    }
+
+    if (recentBtn) {
+        recentBtn.addEventListener('dblclick', function(e) {
+            e.preventDefault();
+            loadQueue('recent');
+        });
+    }
+
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+
+    var likesTab = document.getElementById('likesTab');
+    var recentTab = document.getElementById('recentTab');
+    var recsButton = document.getElementById('recsButton');
+
+    if (likesTab) {
+        likesTab.addEventListener('click', function() {
+
+            currentMode = 'likes';
+
+            loadQueue('likes');
+
+            window.location.href = '?tab=likes';
+        });
+    }
+
+    if (recentTab) {
+        recentTab.addEventListener('click', function() {
+
+            currentMode = 'recent';
+
+            loadQueue('recent');
+
+            window.location.href = '?tab=recently_added';
+        });
+    }
+
+    if (recsButton) {
+        recsButton.addEventListener('click', function() {
+
+            currentMode = 'recs';
+
+            loadQueue('recs');
+        });
+    }
+
+});
+</script>
+
+<script>
+currentMode = "{{ request.GET.tab }}";
+if (!currentMode) {
+    currentMode = "likes";
+}
+if (currentMode === "recently_added") {
+    currentMode = "recent";
+}
+</script>
+
 
 {% endblock %}
