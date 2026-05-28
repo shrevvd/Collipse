@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Count, Q
 from django.http import JsonResponse
-from .models import Track, Artist, Album, Genre, Like, Dislike, UserGenreScore, User, UserArtistScore
+from .models import Track, Artist, Album, Genre, Like, Dislike, UserGenreScore, User, UserArtistScore, SeenUser
 from django.contrib.auth.decorators import login_required
 from random import choice, shuffle
 
@@ -138,6 +138,68 @@ def random_chat(request):
     users = User.objects.exclude(id=request.user.id).order_by('?')
     if users.exists():
         return redirect('profile', username=users.first().username)
+    return redirect('track_list')
+
+def get_best_match(user, exclude_ids=None):
+    """Находит лучшего собеседника, исключая указанных пользователей"""
+    if exclude_ids is None:
+        exclude_ids = []
+    
+    my_genre_scores = {gs.genre_id: gs.score for gs in UserGenreScore.objects.filter(user=user)}
+    my_artist_scores = {ars.artist_id: ars.score for ars in UserArtistScore.objects.filter(user=user)}
+    
+    best_user = None
+    best_score = float('-inf')
+    
+    for other_user in User.objects.exclude(id=user.id).exclude(id__in=exclude_ids):
+        other_genre_scores = {gs.genre_id: gs.score for gs in UserGenreScore.objects.filter(user=other_user)}
+        other_artist_scores = {ars.artist_id: ars.score for ars in UserArtistScore.objects.filter(user=other_user)}
+        
+        if not other_genre_scores and not other_artist_scores:
+            continue
+        
+        score = 0
+        for genre_id, my_score in my_genre_scores.items():
+            other_score = other_genre_scores.get(genre_id, 0)
+            if my_score > 0 and other_score > 0:
+                score += 2
+            elif my_score > 0 and other_score == 0:
+                score += 1
+            elif my_score < 0 and other_score < 0:
+                score -= 1
+        
+        for artist_id, my_score in my_artist_scores.items():
+            other_score = other_artist_scores.get(artist_id, 0)
+            if my_score > 0 and other_score > 0:
+                score += 1
+        
+        if score > best_score:
+            best_score = score
+            best_user = other_user
+    
+    return best_user
+
+def find_match(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    # ID уже просмотренных
+    seen_ids = list(SeenUser.objects.filter(user=request.user).values_list('seen_id', flat=True))
+    
+    # Ищем лучшего среди не просмотренных
+    best_user = get_best_match(request.user, exclude_ids=seen_ids)
+    
+    print(f"Best_user: {best_user}")
+    
+    if not best_user:
+        # Все просмотрены — очищаем историю и ищем заново
+        SeenUser.objects.filter(user=request.user).delete()
+        best_user = get_best_match(request.user)
+    
+    if best_user:
+        SeenUser.objects.get_or_create(user=request.user, seen=best_user)
+        return redirect('profile', username=best_user.username)
+    
     return redirect('track_list')
 
 def chat_list(request):

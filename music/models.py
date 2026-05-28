@@ -151,3 +151,15 @@ class Like(AbstractLike):
 class Dislike(AbstractLike):
     #дизлайк трека
     pass
+
+class SeenUser(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='seen_users')
+    seen = models.ForeignKey(User, on_delete=models.CASCADE, related_name='seen_by')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['user', 'seen']
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} seen {self.seen.username}"
