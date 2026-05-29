@@ -192,9 +192,11 @@ def find_match(request):
     print(f"Best_user: {best_user}")
     
     if not best_user:
-        # Все просмотрены — очищаем историю и ищем заново
-        SeenUser.objects.filter(user=request.user).delete()
-        best_user = get_best_match(request.user)
+        # Все просмотрены — удаляем САМУЮ СТАРУЮ запись, а не все
+        oldest = SeenUser.objects.filter(user=request.user).order_by('created_at').first()
+        if oldest:
+            oldest.delete()
+        best_user = get_best_match(request.user, exclude_ids=list(SeenUser.objects.filter(user=request.user).values_list('seen_id', flat=True)))
     
     if best_user:
         SeenUser.objects.get_or_create(user=request.user, seen=best_user)

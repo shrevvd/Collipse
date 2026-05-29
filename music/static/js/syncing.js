@@ -1,7 +1,3 @@
-// ============================================================
-// НОВАЯ СИСТЕМА СОХРАНЕНИЯ И ВОССТАНОВЛЕНИЯ
-// ============================================================
-
 //  собирает и сохраняет ВСЁ состояние плеера
 function saveFullPlayerState() {
     if (!audio || !audio.src) return;
@@ -102,11 +98,7 @@ function restorePlayerState() {
             return;
         }
         audio.src = state.audioUrl;
-        audio.load();
-        var restored = false;
         function restorePosition() {
-            if (restored) return;
-            restored = true;
             var targetTime = Number(state.currentTime) || 0;
             try {
                 if (targetTime > 0) {
@@ -124,13 +116,6 @@ function restorePlayerState() {
         audio.addEventListener('loadedmetadata', restorePosition, {
             once: true
         });
-        audio.addEventListener('canplay', restorePosition, {
-            once: true
-        });
-        // запасной вариант
-        setTimeout(function() {
-            restorePosition();
-        }, 1000);
 
     } catch (e) {
         console.error('Restore player failed:', e);
@@ -190,3 +175,25 @@ function updateDiscInfo(data) {
 
     }
 })();
+
+document.addEventListener(
+    'visibilitychange',
+    function() {
+
+        if (document.hidden) {
+
+            saveFullPlayerState();
+
+        }
+
+    }
+);
+
+window.addEventListener(
+    'beforeunload',
+    function() {
+
+        saveFullPlayerState();
+
+    }
+);

@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <span onclick="history.back()" style="cursor: pointer; flex-shrink: 0;">
+                <img src="{% static 'icons/НАЗАД.svg' %}" width="24" height="24" style="filter: brightness(0) invert(0.7);">
+            </span>
+            <h3 style="color: #D9D9D9; font-weight: 700;">Users history</h3>
+        </div>
+        
+        <div class="card-custom-right p-4" style="background: #2A282C;">
+            {% for item in seen_users %}
+                <div class="d-flex align-items-center justify-content-between" style="padding: 8px 0; border-bottom: 1px solid #333;">
+                    <div class="d-flex align-items-center gap-3">
+                        <!-- Аватарка -->
+                        <div style="width: 60px; height: 60px; border-radius: 50%; overflow: hidden; background: #353237;">
+                            {% if item.seen.profile.avatar %}
+                                <img src="{{ item.seen.profile.avatar.url }}" width="60" height="60" style="object-fit: cover;">
+                            {% else %}
+                                <img src="{% static 'icons/АВАТАР.svg' %}" width="60" height="60" style="object-fit: cover;">
+                            {% endif %}
+                        </div>
+                        <!-- Имя и ссылка на профиль -->
+                        <a href="{% url 'profile' item.seen.username %}" style="color: white; text-decoration: none; font-size: 17px;">
+                            {{ item.seen.username }}
+                        </a>
+                    </div>
+                    <!-- Дата просмотра -->
+                    <span style="color: #79787A; font-size: 12px;">{{ item.created_at|date:"d.m.Y" }}</span>
+                </div>
+            {% empty %}
+                <p style="color: #79787A;">No history yet</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

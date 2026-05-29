@@ -14,9 +14,9 @@
     <div class="col-md-9">
         <!-- Верхняя строка -->
         <div class="d-flex align-items-center gap-3 mb-4">
-            <a href="{% url 'chat_list' %}" style="flex-shrink: 0;">
+            <span onclick="history.back()" style="cursor: pointer; flex-shrink: 0;">
                 <img src="{% static 'icons/НАЗАД.svg' %}" width="24" height="24" style="filter: brightness(0) invert(0.7);">
-            </a>
+            </span>
             <div>
                 <h3 style="color: #D9D9D9; margin: 0; font-size: 22px; font-weight: 700;">{{ profile.user.username }}</h3>
                 <p style="color: #79787A; margin: 0; font-size: 13px;">@{{ profile.user.username }}</p>
