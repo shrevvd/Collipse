@@ -1,5 +1,6 @@
 # для сохранения паролей
 myapp/settings.py
+.settings
 
 
 # Byte-compiled / optimized / DLL files
