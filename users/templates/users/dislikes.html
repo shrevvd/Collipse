@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <span onclick="history.back()" style="cursor: pointer; flex-shrink: 0;">
+                <img src="{% static 'icons/НАЗАД.svg' %}" width="24" height="24" style="filter: brightness(0) invert(0.7);">
+            </span>
+            <h3 style="color: #D9D9D9; font-weight: 700;">Dislikes</h3>
+        </div>
+        
+        <div class="card-custom-right p-4" style="background: #2A282C;">
+            {% for dislike in dislikes %}
+                <div class="d-flex align-items-center dislike-row" style="padding: 8px 10px; border-bottom: 1px solid #333;" data-track-id="{{ dislike.track.pk }}">
+                    {% if dislike.track.cover %}
+                        <img src="{{ dislike.track.cover.url }}" width="35" height="35" style="border-radius: 4px; object-fit: cover; margin-right: 10px;">
+                    {% else %}
+                        <div style="width: 35px; height: 35px; border-radius: 4px; background: #353237; margin-right: 10px;"></div>
+                    {% endif %}
+                    <div style="flex: 1;">
+                        <a href="{% url 'track_detail' dislike.track.pk %}" style="color: white; font-size: 14px; text-decoration: none;">{{ dislike.track.title }}</a>
+                        <span style="color: #aaa; font-size: 12px; margin-left: 8px;">{{ dislike.track.artist.name }}</span>
+                    </div>
+                    <span style="color: #79787A; font-size: 12px; margin-right: 15px;">{{ dislike.created_at|date:"d.m.Y" }}</span>
+                    <img src="{% static 'player/DISLIKE_PRESSED.svg' %}" class="remove-dislike-btn" data-track-id="{{ dislike.track.pk }}" width="25" height="25" style="cursor: pointer;" alt="Remove dislike">
+                </div>
+            {% empty %}
+                <p style="color: #79787A;">No dislikes yet</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+<script>
+function getCSRFToken() {
+    var cookie = document.cookie.split('; ').find(function(row) { return row.startsWith('csrftoken='); });
+    return cookie ? cookie.split('=')[1] : '';
+}
+
+document.querySelectorAll('.remove-dislike-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var trackId = this.dataset.trackId;
+        var row = this.closest('.dislike-row');
+        
+        fetch('/track/' + trackId + '/dislike/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRFToken() }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.status === 'undisliked') {
+                row.remove();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

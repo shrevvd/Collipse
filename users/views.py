@@ -5,8 +5,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from .forms import RegisterForm
 from .models import Profile, Friend, Message
-from music.models import SeenUser
-from music.models import UserGenreScore, UserArtistScore
+from music.models import UserGenreScore, UserArtistScore, SeenUser, Dislike
 from django.db import models
 from django.http import JsonResponse
 
@@ -157,3 +156,8 @@ def my_score(request):
 def users_history(request):
     seen_users = SeenUser.objects.filter(user=request.user).select_related('seen__profile').order_by('-created_at')
     return render(request, 'users/users_history.html', {'seen_users': seen_users})
+
+@login_required
+def dislikes_list(request):
+    dislikes = Dislike.objects.filter(user=request.user).select_related('track__artist').order_by('-created_at')
+    return render(request, 'users/dislikes.html', {'dislikes': dislikes})

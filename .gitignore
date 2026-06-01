@@ -1,3 +1,7 @@
+# для сохранения паролей
+myapp/settings.py
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

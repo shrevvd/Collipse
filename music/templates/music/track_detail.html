@@ -32,11 +32,11 @@
             {% endif %}
             
             <!-- Аудиоплеер -->
-            {% if track.audio_file %}
+            <!-- {% if track.audio_file %}
                 <audio controls style="width: 100%; margin-top: 20px;">
                     <source src="{{ track.audio_file.url }}" type="audio/mpeg">
                 </audio>
-            {% endif %}
+            {% endif %} -->
             
             <a href="{% url 'track_list' %}" class="upload-link mt-3" style="display: block;">← Back</a>
         </div>

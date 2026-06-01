@@ -7,9 +7,16 @@ from random import choice, shuffle
 
 
 def track_list(request):
-    if request.user.is_authenticated and request.GET.get('tab') == 'likes':
+    if request.user.is_authenticated:
+        tab = request.GET.get('tab', 'likes')
+    else:
+        tab = request.GET.get('tab', 'recently_added')
+    
+    if tab == 'likes' and request.user.is_authenticated:
         liked_ids = Like.objects.filter(user=request.user).values_list('track_id', flat=True)
         tracks = Track.objects.filter(id__in=liked_ids).select_related('artist', 'album').prefetch_related('genre')
+    elif tab == 'recently_added':
+        tracks = Track.objects.select_related('artist', 'album').prefetch_related('genre').order_by('-uploaded_at')[:20]
     else:
         tracks = Track.objects.select_related('artist', 'album').prefetch_related('genre').all()
     
@@ -40,7 +47,7 @@ def artist_list(request):
 def artist_detail(request, pk):
     """Страница исполнителя с его треками"""
     artist = get_object_or_404(Artist, pk=pk)
-    tracks = artist.tracks.select_related('album', 'genre').all()
+    tracks = artist.tracks.select_related('album').prefetch_related('genre').all()
     return render(request, 'music/artist_detail.html', {
         'artist': artist,
         'tracks': tracks

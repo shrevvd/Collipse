@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <!-- Стрелка назад -->
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <span onclick="history.back()" style="cursor: pointer; flex-shrink: 0;">
+                <img src="{% static 'icons/НАЗАД.svg' %}" width="24" height="24" style="filter: brightness(0) invert(0.7);">
+            </span>
+            <h3 style="color: #D9D9D9; font-weight: 700;">{{ artist.name }}</h3>
+        </div>
+        
+        <div class="card-custom-right p-4" style="background: #2A282C;">
+            <!-- Фото и имя -->
+            <div class="text-center mb-4">
+                {% if artist.photo %}
+                    <img src="{{ artist.photo.url }}" width="150" height="150" style="border-radius: 50%; object-fit: cover; border: 3px solid #D9D9D9;">
+                {% else %}
+                    <div style="width: 150px; height: 150px; border-radius: 50%; background: #353237; margin: 0 auto; border: 3px solid #D9D9D9;"></div>
+                {% endif %}
+                <h4 style="color: white; margin-top: 15px;">{{ artist.name }}</h4>
+            </div>
+            
+            <!-- Поиск по трекам -->
+            <div class="search-box mb-3">
+                <input type="text" id="trackSearch" placeholder="Search in tracks..." oninput="searchTracks()" autocomplete="off">
+                <img src="{% static 'icons/ЛУПА.svg' %}" alt="Search">
+            </div>
+            
+            <!-- Список треков -->
+            <div id="tracksList">
+                {% for track in tracks %}
+                <div class="track-row-item d-flex align-items-center" 
+                     style="padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #333;"
+                     data-title="{{ track.title|lower }}"
+                     <a href="{% url 'track_detail' track.pk %}" style="text-decoration: none; color: inherit;">
+                        <div class="track-row-item d-flex align-items-center" 
+                            style="padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #333;"
+                            data-title="{{ track.title|lower }}">
+                            <!-- содержимое -->
+                        </div>
+                    </a>
+                    {% if track.cover %}
+                        <img src="{{ track.cover.url }}" width="35" height="35" style="border-radius: 4px; object-fit: cover; margin-right: 10px;">
+                    {% else %}
+                        <div style="width: 35px; height: 35px; border-radius: 4px; background: #353237; margin-right: 10px;"></div>
+                    {% endif %}
+                    <div style="flex: 1;">
+                        <span style="color: white; font-size: 14px;">{{ track.title }}</span>
+                    </div>
+                    <span style="color: #aaa; font-size: 12px;">{{ track.duration|default:"--:--" }}</span>
+                </div>
+                {% empty %}
+                <p style="color: #79787A;">No tracks yet</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function searchTracks() {
+    var query = document.getElementById('trackSearch').value.toLowerCase();
+    document.querySelectorAll('.track-row-item').forEach(function(row) {
+        var title = row.dataset.title;
+        row.style.display = title.includes(query) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}
